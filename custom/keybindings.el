@@ -33,7 +33,7 @@
 
 ;; Standalone global keybindings
 (setq custom/global-keybindings '(("recentf-open" . "C-x C-r")
-                                  ("comment-line" . "C-c /")
+                                  ("comment-line" . "C-c ;")
                                   ("dictionary-lockup-definition" . "C-c d")
                                   ("enlarge-window" . "C-c ^")
                                   ("enlarge-window-horizontally" . "C-c >")
@@ -68,3 +68,5 @@
 
 ;; Avoid the the mistake of calling "C-x C-b" instead of "C-x b"
 (global-unset-key (kbd "C-x C-b"))
+
+(provide 'keybindings)

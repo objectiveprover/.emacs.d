@@ -1,13 +1,28 @@
 ;;; -*- lexical-binding: t -*-
 (require 'package)
 
-(add-to-list 'load-path "~/.emacs.d/packages") ;; Third-party packages
-(add-to-list 'load-path "~/.emacs.d/custom") ;; Custom code
+;; Highlight certain ubiquitous elisp functions as keywords to make code look
+;; nicer to read.
+(let ((keywords '("add-to-list"
+                  "set-face-attribute"
+                  "set-face-background"
+                  "custom-set-variables"
+                  "keymap-global-set"
+                  "add-hook"
+                  "car"
+                  "cdr"
+                  "concat")))
+  (font-lock-add-keywords 'emacs-lisp-mode
+    `((,(concat "\\_<" (regexp-opt keywords t) "\\_>")
+       . font-lock-keyword-face))))
 
-(load "variables") ;; Global Variables
-(load "colors") ;; Color palette
-(load "functions") ;; Custom functions
-(load "keybindings") ;; Keybindings reference (No keybindings set in there)
+(add-to-list 'load-path (expand-file-name "packages" user-emacs-directory)) ; Third party code
+(add-to-list 'load-path (expand-file-name "custom" user-emacs-directory)) ; My code
+
+(require 'variables) ;; Global Variables
+(require 'colors) ;; Color palette
+(require 'functions) ;; Custom functions
+(require 'keybindings) ;; Keybindings reference (No keybindings set in there)
 
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
@@ -17,31 +32,23 @@
 ;; I like to know what's being installed and make sure it's all intentional.
 (setq package-selected-packages
       '(olivetti
-        denote
         iedit
         vertico
         marginalia
         flycheck
-        spell-fu
-        lsp-mode
         geiser-chez
         yasnippet
         expand-region
         multiple-cursors
         visual-fill-column
-        swift-mode
-        lsp-sourcekit
-        swift-helpful
         paren-face
         treemacs
         delight
         helpful
         breadcrumb
-        git-gutter))
-
-;; Install packages in this list with M-x package-vc-install-selected-packages
-(setq package-vc-selected-packages
-   '((haskell-ts-mode :url "git@github.com:Jaiheravi/haskell-ts-mode.git")))
+        magit
+        git-gutter
+        spell-fu))
 
 (use-package git-gutter
   :ensure t
@@ -49,10 +56,9 @@
   :init
   (global-git-gutter-mode +1)
   :config
-  (set-face-background 'git-gutter:modified nil)
-  (set-face-foreground 'git-gutter:modified rose-highlight-high)
-  (set-face-foreground 'git-gutter:added rose-highlight-high)
-  (set-face-foreground 'git-gutter:deleted rose-highlight-high)
+  (set-face-attribute 'git-gutter:modified nil :foreground ansi-color-bright-white :weight 'normal)
+  (set-face-attribute 'git-gutter:added nil :foreground ansi-color-bright-white :weight 'normal)
+  (set-face-attribute 'git-gutter:deleted nil :foreground ansi-color-bright-white :weight 'normal)
   (custom-set-variables
    '(git-gutter:modified-sign "∓")
    '(git-gutter:added-sign "+")
@@ -89,8 +95,8 @@
   :ensure t
   :config
   (keymap-global-set (getkey "treemacs") 'treemacs)
-  (set-face-attribute 'treemacs-git-modified-face nil :foreground rose-pine :slant 'normal)
-  (set-face-attribute 'treemacs-git-added-face nil :foreground rose-pine))
+  (set-face-attribute 'treemacs-git-modified-face nil :foreground ansi-color-black :slant 'normal)
+  (set-face-attribute 'treemacs-git-added-face nil :foreground ansi-color-black))
 
 ;; Add parentheses face everywhere
 (use-package paren-face
@@ -99,16 +105,13 @@
   :init
   (global-paren-face-mode)
   :config
-  (set-face-attribute 'parenthesis nil :foreground rose-highlight-high :weight 'bold)
+  (set-face-attribute 'parenthesis nil :foreground ansi-color-white :weight 'normal)
   (setq paren-face-modes '(prog-mode))
   (setq paren-face-regexp "[][()}{]"))
 
 ;; Remove whitespace modeline indicator
 (use-package whitespace
   :delight whitespace-mode)
-
-;; --------------------------------------------------
-;; LaTeX
 
 ;; Center text
 (use-package visual-fill-column
@@ -119,31 +122,6 @@
 
 (use-package simple
   :delight visual-line-mode)
-
-(use-package auctex
-  :ensure t
-  :defer t
-  :custom
-  (TeX-auto-save t)
-  (TeX-parse-self t)
-  (fill-column 80)
-  :config
-  (setq-default TeX-master nil)
-  (add-hook 'LaTeX-mode-hook 'AUCTeX-mode t)
-  (add-hook 'LaTeX-mode-hook 'turn-on-reftex t)
-  (add-hook 'LaTeX-mode-hook
-            (lambda ()
-              (auto-fill-mode -1)
-              (visual-line-mode)
-              (whitespace-mode)
-              (set-face-attribute 'whitespace-space nil :background nil :foreground rose-gold :weight 'bold)
-              ;; We don't want highlighting long lines on LaTeX documents
-              ;; because every paragraph is a line.
-              (set-face-attribute 'whitespace-line nil :background nil :foreground nil)
-              ;; I use as little syntax highlighting as possible, but LaTeX is unusable without it
-              ;; Here I fix highlighting only for LaTeX modes.
-              (face-remap-add-relative 'font-lock-keyword-face :foreground rose-gold)
-              (font-lock-update))))
 
 (use-package markdown-mode
   :defer t
@@ -157,13 +135,13 @@
               (auto-fill-mode -1)
               (visual-line-mode)
               (whitespace-mode)
-              (set-face-attribute 'whitespace-space nil :background nil :foreground rose-gold :weight 'bold)
-              ;; We don't want highlighting long lines on LaTeX documents
+              (set-face-attribute 'whitespace-space nil :background nil :foreground ansi-color-black :weight 'bold)
+              ;; We don't want highlighting long lines on Markdown documents
               ;; because every paragraph is a line.
               (set-face-attribute 'whitespace-line nil :background nil :foreground nil)
               ;; I use as little syntax highlighting as possible, but sometimes
               ;; we ned to be able to visually parse text fast.
-              (face-remap-add-relative 'font-lock-keyword-face :foreground rose-gold)
+              (face-remap-add-relative 'font-lock-keyword-face :foreground ansi-color-black)
               (font-lock-update))))
 
 ;; Select and edit multiple things at the same time
@@ -174,29 +152,34 @@
   (keymap-global-set (getkey "mc/mark-previous-like-this") 'mc/mark-previous-like-this)
   (keymap-global-set (getkey "mc/mark-all-like-this") 'mc/mark-all-like-this))
 
+
+
+
 ;; Version Control
 (use-package magit
+  :ensure t
   :config
-  (set-face-attribute
-   'magit-diff-added nil :background rose-surface :foreground rose-foam)
-  (set-face-attribute
-   'magit-diff-removed nil :background rose-surface :foreground rose-rose)
-  (set-face-attribute
-   'magit-diff-added-highlight nil :background rose-base :foreground rose-foam)
-  (set-face-attribute
-   'magit-diff-removed-highlight nil
-   :background rose-base :foreground rose-rose)
-  (set-face-attribute
-   'magit-diff-context-highlight nil
-   :background rose-surface :foreground rose-muted)
-  (set-face-attribute
-   'magit-diff-hunk-heading-highlight nil
-   :background rose-overlay :foreground rose-muted :weight 'bold)
-  (set-face-attribute
-   'magit-diff-hunk-heading nil
-   :background rose-overlay :foreground rose-muted :weight 'normal)
-  (set-face-attribute
-   'magit-section-heading nil :background nil :foreground rose-foam))
+  ;; (set-face-attribute
+  ;;  'magit-diff-added nil :background color-background :foreground color-black)
+  ;; (set-face-attribute
+  ;;  'magit-diff-removed nil :background color-background :foreground color-black)
+  ;; (set-face-attribute
+  ;;  'magit-diff-added-highlight nil :background color-background :foreground color-black)
+  ;; (set-face-attribute
+  ;;  'magit-diff-removed-highlight nil
+  ;;  :background color-background :foreground color-black)
+  ;; (set-face-attribute
+  ;;  'magit-diff-context-highlight nil
+  ;;  :background color-background :foreground color-black)
+  ;; (set-face-attribute
+  ;;  'magit-diff-hunk-heading-highlight nil
+  ;;  :background color-white :foreground color-black :weight 'bold)
+  ;; (set-face-attribute
+  ;;  'magit-diff-hunk-heading nil
+  ;;  :background color-white :foreground color-black :weight 'normal)
+  ;; (set-face-attribute
+  ;;  'magit-section-heading nil :background nil :foreground color-black)
+  )
 
 ;; Increase selection in a semantic way
 (use-package expand-region
@@ -236,7 +219,7 @@
   :defer t
   :config
   (keymap-global-set (getkey "iedit-mode") 'iedit-mode)
-  (set-face-background 'iedit-occurrence rose-overlay))
+  (set-face-background 'iedit-occurrence color-white))
 
 ;; Show what functions are available on M-x
 (use-package vertico
@@ -255,9 +238,10 @@
 ;; Make all whitespace characters visible
 (use-package whitespace
   :config
-  (set-face-attribute 'whitespace-line nil
-                      :background rose-overlay
-                      :foreground rose-rose))
+  ;; (set-face-attribute 'whitespace-line nil
+  ;;                     :background color-white
+  ;;                     :foreground color-black)
+  )
 
 ;; Persist history over Emacs restarts.
 ;; - Vertico sorts by history position.
@@ -287,8 +271,10 @@
 (use-package flycheck
   :ensure t
   :custom
-  (flycheck-disabled-checkers '(emacs-lisp emacs-lisp-checkdoc))
+  ;;(flycheck-disabled-checkers '(emacs-lisp emacs-lisp-checkdoc))
+  (flycheck-disabled-checkers '(emacs-lisp-checkdoc))
   (flycheck-mode-line-prefix " FC")
+  (flycheck-emacs-lisp-load-path 'inherit)
   :init
   (global-flycheck-mode)
   :config
@@ -312,11 +298,27 @@
   :ensure t
   :config
   (spell-fu-global-mode)
+
+  (defun custom/spell-fu-add-personal-dict ()
+    (spell-fu-dictionary-add
+     (spell-fu-get-ispell-dictionary "en_US"))
+    (spell-fu-dictionary-add
+     (spell-fu-get-personal-dictionary
+      "en-personal"
+      (expand-file-name "personal-dictionary.pws" user-emacs-directory))))
+
+  (add-hook 'spell-fu-mode-hook #'custom/spell-fu-add-personal-dict)
   :custom-face
   (spell-fu-incorrect-face
-   ((t (:underline nil :style wave :color ,flexoki-yellow-200))))
+   ((t (:underline nil :style wave :color ,ansi-color-red))))
   :custom
-  (flycheck-disabled-checkers '(emacs-lisp emacs-lisp-checkdoc dired-mode)))
+  (spell-fu-faces-exclude
+   '(font-lock-keyword-face
+     font-lock-function-name-face
+     font-lock-variable-name-face
+     font-lock-builtin-face
+     font-lock-constant-face
+     font-lock-type-face)))
 
 ;; Quickly insert bits of code
 (use-package yasnippet
@@ -327,7 +329,7 @@
   :init
   (yas-global-mode 1))
 
-(load "languages")
+(require 'languages)
 
 ;; --------------------------------------------------
 ;; General settings
@@ -342,16 +344,11 @@
 ;; How total number of matches when searching
 (setq isearch-lazy-count t)
 
-;; Delay inline suggestions by 2 seconds
+;; Delay inline suggestions by 1 second
 (setq completion-preview-idle-delay 1)
 
-;; ;; Never use tabs for indentation
+;; Never use tabs for indentation
 (setq-default indent-tabs-mode nil)
-
-;; Always use 2 spaces for indentation
-(setq-default tab-width 2)
-(setq-default standard-indent 2)
-(setq-default c-basic-offset 2)
 
 ;; Show recent files when invoking find-file
 (recentf-mode 1)
@@ -359,7 +356,7 @@
 ;; Enable ANSI colors when using compile mode
 (add-hook 'compilation-filter-hook #'ansi-color-compilation-filter)
 
-;; Auto-scroll when something repeatedly in the compile mode
+;; Auto-scroll when something repeatedly shows in the compile mode
 (with-eval-after-load 'compile
   (setq compilation-scroll-output t))
 
@@ -419,7 +416,6 @@
   :init
   (global-completion-preview-mode))
 
-
 ;; Match delimiters
 (setq electric-pair-preserve-balance t)
 (setq electric-pair-delete-adjacent-pairs t)
@@ -428,105 +424,54 @@
 ;; --------------------------------------------------
 ;; Color customization
 
-;; ANSI Colors
-(set-face-foreground 'ansi-color-black rose-text)
-(set-face-background 'ansi-color-black rose-text)
-(set-face-foreground 'ansi-color-bright-black rose-muted)
-(set-face-background 'ansi-color-bright-black rose-muted)
-(set-face-foreground 'ansi-color-blue rose-pine)
-(set-face-background 'ansi-color-blue rose-pine)
-(set-face-foreground 'ansi-color-bright-blue rose-pine)
-(set-face-background 'ansi-color-bright-blue rose-pine)
-(set-face-foreground 'ansi-color-cyan rose-iris)
-(set-face-background 'ansi-color-cyan rose-iris)
-(set-face-foreground 'ansi-color-bright-cyan rose-iris)
-(set-face-background 'ansi-color-bright-cyan rose-iris)
-(set-face-foreground 'ansi-color-magenta rose-iris)
-(set-face-background 'ansi-color-magenta rose-iris)
-(set-face-foreground 'ansi-color-bright-magenta rose-iris)
-(set-face-background 'ansi-color-bright-magenta rose-iris)
-(set-face-foreground 'ansi-color-red rose-love)
-(set-face-background 'ansi-color-red rose-love)
-(set-face-foreground 'ansi-color-bright-red rose-love)
-(set-face-background 'ansi-color-bright-red rose-love)
-(set-face-foreground 'ansi-color-green rose-foam)
-(set-face-background 'ansi-color-green rose-foam)
-(set-face-foreground 'ansi-color-bright-green rose-foam)
-(set-face-background 'ansi-color-bright-green rose-foam)
-(set-face-foreground 'ansi-color-yellow rose-gold)
-(set-face-background 'ansi-color-yellow rose-gold)
-(set-face-foreground 'ansi-color-bright-yellow rose-gold)
-(set-face-background 'ansi-color-bright-yellow rose-gold)
-
 ;; Global UI
 (set-face-attribute 'mode-line nil
-                    :background rose-highlight-low
-                    :foreground rose-subtle
+                    :background color-dark-background
+                    :foreground ansi-color-black
                     :box '(:style flat-button :line-width 4))
 
 (set-face-attribute 'mode-line-inactive nil
-                    :background rose-surface
-                    :foreground rose-muted
+                    :background ansi-color-bright-white
+                    :foreground ansi-color-bright-black
                     :box '(:style flat-button :line-width 4))
 
 (set-face-attribute 'default nil
-                    :foreground rose-text
-                    :background rose-surface)
+                    :foreground ansi-color-black
+                    :background color-background)
 
 (set-face-background 'show-paren-match nil)
-(set-face-foreground 'show-paren-match rose-rose)
-(set-face-foreground 'line-number rose-highlight-high)
-(set-face-foreground 'line-number-current-line rose-rose)
-(set-face-background 'region rose-highlight-low)
-(set-face-attribute 'isearch nil :background rose-overlay :foreground rose-love)
+(set-face-foreground 'show-paren-match ansi-color-red)
+(set-face-foreground 'line-number ansi-color-white)
+(set-face-foreground 'line-number-current-line ansi-color-red)
+(set-face-background 'region color-region)
+(set-face-attribute 'isearch nil :background color-dark-background :foreground ansi-color-red)
 (set-face-attribute 'lazy-highlight nil
-                    :background rose-overlay :foreground rose-love)
+                    :background color-dark-background :foreground ansi-color-red)
 (set-face-attribute 'minibuffer-prompt nil
-                    :foreground rose-rose :weight 'normal)
-(set-face-attribute 'highlight nil :background rose-overlay)
+                    :foreground ansi-color-black :weight 'normal)
+(set-face-attribute 'highlight nil :background color-dark-background)
 
 ;; Syntax highlighting
-(set-face-attribute 'font-lock-function-name-face nil :foreground rose-text)
-(set-face-attribute 'font-lock-function-call-face nil :foreground rose-text)
-(set-face-attribute 'font-lock-variable-name-face nil :foreground rose-text :slant 'italic)
-(set-face-attribute 'font-lock-variable-use-face nil :foreground rose-text)
-(set-face-attribute 'font-lock-keyword-face nil :foreground rose-text :weight 'bold)
+(set-face-attribute 'font-lock-function-name-face nil :foreground ansi-color-black)
+(set-face-attribute 'font-lock-function-call-face nil :foreground ansi-color-black)
+(set-face-attribute 'font-lock-variable-name-face nil :foreground ansi-color-black :slant 'italic)
+(set-face-attribute 'font-lock-variable-use-face nil :foreground ansi-color-black)
+(set-face-attribute 'font-lock-keyword-face nil :foreground ansi-color-black :weight 'bold)
 (set-face-attribute 'font-lock-comment-face nil
                     :slant 'italic
-                    :foreground rose-rose)
-(set-face-attribute 'font-lock-type-face nil :foreground rose-text)
-(set-face-attribute 'font-lock-constant-face nil :foreground rose-text)
-(set-face-attribute 'font-lock-builtin-face nil :foreground rose-pine)
+                    :foreground ansi-color-cyan)
+(set-face-attribute 'font-lock-type-face nil :foreground ansi-color-black)
+(set-face-attribute 'font-lock-constant-face nil :foreground ansi-color-black)
+(set-face-attribute 'font-lock-builtin-face nil :foreground ansi-color-black :weight 'bold :slant 'italic)
 (set-face-attribute 'font-lock-string-face nil
                     :slant 'italic
-                    :foreground rose-subtle)
-(set-face-attribute 'font-lock-number-face nil :foreground rose-subtle)
-(set-face-attribute 'font-lock-operator-face nil :foreground rose-subtle)
-(set-face-attribute 'font-lock-punctuation-face nil :foreground rose-muted)
-(set-face-attribute 'font-lock-bracket-face nil :foreground rose-muted)
-(set-face-attribute 'font-lock-delimiter-face nil :foreground rose-muted)
-(set-face-attribute 'font-lock-escape-face nil :foreground rose-rose)
-(set-face-attribute 'flycheck-error nil :underline `(:style wave :color ,rose-highlight-med))
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(git-gutter:added-sign "+")
- '(git-gutter:deleted-sign "-")
- '(git-gutter:modified-sign "∓")
- '(package-selected-packages
-   '(auto-fill auto-fill-mode breadcrumb delight denote expand-region flycheck
-               geiser-chez git-gutter haskell-ts-mode helpful iedit lsp-mode
-               lsp-sourcekit marginalia multiple-cursors olivetti paren-face
-               spell-fu swift-helpful swift-mode treemacs vertico
-               visual-fill-column yasnippet))
- '(whitespace-display-mappings
-   '((space-mark 32 [183] [46]) (space-mark 160 [164] [95])
-     (newline-mark 10 [9671 10]) (tab-mark 9 [187 9] [92 9]))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+                    :foreground ansi-color-bright-black)
+(set-face-attribute 'font-lock-number-face nil :foreground ansi-color-black)
+(set-face-attribute 'font-lock-operator-face nil :foreground ansi-color-black)
+(set-face-attribute 'font-lock-punctuation-face nil :foreground ansi-color-black)
+(set-face-attribute 'font-lock-bracket-face nil :foreground ansi-color-black)
+(set-face-attribute 'font-lock-delimiter-face nil :foreground ansi-color-black)
+(set-face-attribute 'font-lock-escape-face nil :foreground ansi-color-black)
+(set-face-attribute 'error nil :underline `(:style wave :color ,ansi-color-red) :weight 'normal)
+(set-face-attribute 'flycheck-warning nil :foreground ansi-color-yellow :weight 'normal)
+(set-face-attribute 'error nil :underline `(:style wave :color ,ansi-color-red) :foreground ansi-color-red)

@@ -8,3 +8,5 @@
                         (500 . "Medium")
                         (600 . "SemiBold")
                         (700 . "Bold")))
+
+(provide 'variables)

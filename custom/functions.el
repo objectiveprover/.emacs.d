@@ -71,3 +71,5 @@
 ;;   (if (looking-back "[\\s-\\s.]+" nil)
 ;;       (skip-syntax-backward " ")
 ;;     (backward-word)))
+
+(provide 'functions)

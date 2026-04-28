@@ -161,3 +161,29 @@
       rose-highlight-low "#f4ede8"
       rose-highlight-med "#dfdad9"
       rose-highlight-high "#cecacd")
+
+;; --------------------------------------------------
+;; Nightfox https://github.com/EdenEast/nightfox.nvim
+;; Note: Names are based on the ANSI colors
+
+(setq ansi-color-black "#4A4452"
+      ansi-color-bright-black "#7A7480"
+      ansi-color-red "#B85868"
+      ansi-color-bright-red "#C96878"
+      ansi-color-green "#6E8A4A"
+      ansi-color-bright-green "#82A056"
+      ansi-color-yellow "#B58820"
+      ansi-color-bright-yellow "#C99528"
+      ansi-color-blue "#4F77A8"
+      ansi-color-bright-blue "#6088B8"
+      ansi-color-magenta "#8E5A98"
+      ansi-color-bright-magenta "#9F6AA8"
+      ansi-color-cyan "#4A8A85"
+      ansi-color-bright-cyan "#5AA098"
+      ansi-color-white "#C8BFAE"
+      ansi-color-bright-white "#DED7C5"
+      color-background "#F2EDE0"
+      color-dark-background "#DCD4C0"
+      color-region "#E5DCC4")
+
+(provide 'colors)
