@@ -6,6 +6,7 @@
 (let ((keywords '("add-to-list"
                   "set-face-attribute"
                   "set-face-background"
+                  "set-face-foreground"
                   "custom-set-variables"
                   "keymap-global-set"
                   "add-hook"
@@ -56,9 +57,9 @@
   :init
   (global-git-gutter-mode +1)
   :config
-  (set-face-attribute 'git-gutter:modified nil :foreground ansi-color-bright-white :weight 'normal)
-  (set-face-attribute 'git-gutter:added nil :foreground ansi-color-bright-white :weight 'normal)
-  (set-face-attribute 'git-gutter:deleted nil :foreground ansi-color-bright-white :weight 'normal)
+  (set-face-attribute 'git-gutter:modified nil :foreground ansi-color-bright-blue :weight 'normal)
+  (set-face-attribute 'git-gutter:added nil :foreground ansi-color-bright-green :weight 'normal)
+  (set-face-attribute 'git-gutter:deleted nil :foreground ansi-color-bright-red :weight 'normal)
   (custom-set-variables
    '(git-gutter:modified-sign "∓")
    '(git-gutter:added-sign "+")
@@ -82,6 +83,7 @@
 (use-package eldoc
   :delight)
 
+;; Code folding
 (use-package hideshow
   :ensure t
   :delight (hs-minor-mode)
@@ -91,12 +93,16 @@
   (keymap-global-set (getkey "hs-toggle-hiding") 'hs-toggle-hiding)
   (keymap-global-set (getkey "hs-hide-all") 'hs-hide-all))
 
+;; File tree sidebar
 (use-package treemacs
   :ensure t
   :config
   (keymap-global-set (getkey "treemacs") 'treemacs)
-  (set-face-attribute 'treemacs-git-modified-face nil :foreground ansi-color-black :slant 'normal)
-  (set-face-attribute 'treemacs-git-added-face nil :foreground ansi-color-black))
+  (set-face-attribute 'treemacs-git-modified-face nil
+                      :foreground ansi-color-black
+                      :slant 'normal)
+  (set-face-attribute 'treemacs-git-added-face nil
+                      :foreground ansi-color-black))
 
 ;; Add parentheses face everywhere
 (use-package paren-face
@@ -105,7 +111,9 @@
   :init
   (global-paren-face-mode)
   :config
-  (set-face-attribute 'parenthesis nil :foreground ansi-color-white :weight 'normal)
+  (set-face-attribute 'parenthesis nil
+                      :foreground ansi-color-white
+                      :weight 'normal)
   (setq paren-face-modes '(prog-mode))
   (setq paren-face-regexp "[][()}{]"))
 
@@ -135,13 +143,19 @@
               (auto-fill-mode -1)
               (visual-line-mode)
               (whitespace-mode)
-              (set-face-attribute 'whitespace-space nil :background nil :foreground ansi-color-black :weight 'bold)
+              (set-face-attribute 'whitespace-space nil
+                                  :background nil
+                                  :foreground ansi-color-black
+                                  :weight 'bold)
               ;; We don't want highlighting long lines on Markdown documents
               ;; because every paragraph is a line.
-              (set-face-attribute 'whitespace-line nil :background nil :foreground nil)
+              (set-face-attribute 'whitespace-line nil
+                                  :background nil
+                                  :foreground nil)
               ;; I use as little syntax highlighting as possible, but sometimes
               ;; we ned to be able to visually parse text fast.
-              (face-remap-add-relative 'font-lock-keyword-face :foreground ansi-color-black)
+              (face-remap-add-relative 'font-lock-keyword-face
+                                       :foreground ansi-color-black)
               (font-lock-update))))
 
 ;; Select and edit multiple things at the same time
@@ -151,9 +165,6 @@
   (keymap-global-set (getkey "mc/mark-next-like-this") 'mc/mark-next-like-this)
   (keymap-global-set (getkey "mc/mark-previous-like-this") 'mc/mark-previous-like-this)
   (keymap-global-set (getkey "mc/mark-all-like-this") 'mc/mark-all-like-this))
-
-
-
 
 ;; Version Control
 (use-package magit
@@ -312,6 +323,7 @@
   (spell-fu-incorrect-face
    ((t (:underline nil :style wave :color ,ansi-color-red))))
   :custom
+  (spell-fu-ignore-modes '(dired-mode))
   (spell-fu-faces-exclude
    '(font-lock-keyword-face
      font-lock-function-name-face
@@ -444,34 +456,63 @@
 (set-face-foreground 'line-number ansi-color-white)
 (set-face-foreground 'line-number-current-line ansi-color-red)
 (set-face-background 'region color-region)
-(set-face-attribute 'isearch nil :background color-dark-background :foreground ansi-color-red)
+(set-face-attribute 'isearch nil
+                    :background color-dark-background
+                    :foreground ansi-color-red)
 (set-face-attribute 'lazy-highlight nil
-                    :background color-dark-background :foreground ansi-color-red)
+                    :background color-dark-background
+                    :foreground ansi-color-red)
 (set-face-attribute 'minibuffer-prompt nil
-                    :foreground ansi-color-black :weight 'normal)
-(set-face-attribute 'highlight nil :background color-dark-background)
+                    :foreground ansi-color-black
+                    :weight 'normal)
+(set-face-attribute 'highlight nil
+                    :background color-dark-background)
+(set-face-attribute 'cursor nil
+                    :foreground ansi-color-white)
 
 ;; Syntax highlighting
-(set-face-attribute 'font-lock-function-name-face nil :foreground ansi-color-black)
-(set-face-attribute 'font-lock-function-call-face nil :foreground ansi-color-black)
-(set-face-attribute 'font-lock-variable-name-face nil :foreground ansi-color-black :slant 'italic)
-(set-face-attribute 'font-lock-variable-use-face nil :foreground ansi-color-black)
-(set-face-attribute 'font-lock-keyword-face nil :foreground ansi-color-black :weight 'bold)
+(set-face-attribute 'font-lock-function-name-face nil
+                    :foreground ansi-color-black)
+(set-face-attribute 'font-lock-function-call-face nil
+                    :foreground ansi-color-black)
+(set-face-attribute 'font-lock-variable-name-face nil
+                    :foreground ansi-color-black
+                    :slant 'italic)
+(set-face-attribute 'font-lock-variable-use-face nil
+                    :foreground ansi-color-black)
+(set-face-attribute 'font-lock-keyword-face nil
+                    :foreground ansi-color-black
+                    :weight 'bold)
 (set-face-attribute 'font-lock-comment-face nil
                     :slant 'italic
                     :foreground ansi-color-cyan)
-(set-face-attribute 'font-lock-type-face nil :foreground ansi-color-black)
-(set-face-attribute 'font-lock-constant-face nil :foreground ansi-color-black)
-(set-face-attribute 'font-lock-builtin-face nil :foreground ansi-color-black :weight 'bold :slant 'italic)
+(set-face-attribute 'font-lock-type-face nil
+                    :foreground ansi-color-black)
+(set-face-attribute 'font-lock-constant-face nil
+                    :foreground ansi-color-black)
+(set-face-attribute 'font-lock-builtin-face nil
+                    :foreground ansi-color-black
+                    :weight 'bold
+                    :slant 'italic)
 (set-face-attribute 'font-lock-string-face nil
                     :slant 'italic
                     :foreground ansi-color-bright-black)
-(set-face-attribute 'font-lock-number-face nil :foreground ansi-color-black)
-(set-face-attribute 'font-lock-operator-face nil :foreground ansi-color-black)
-(set-face-attribute 'font-lock-punctuation-face nil :foreground ansi-color-black)
-(set-face-attribute 'font-lock-bracket-face nil :foreground ansi-color-black)
-(set-face-attribute 'font-lock-delimiter-face nil :foreground ansi-color-black)
-(set-face-attribute 'font-lock-escape-face nil :foreground ansi-color-black)
-(set-face-attribute 'error nil :underline `(:style wave :color ,ansi-color-red) :weight 'normal)
-(set-face-attribute 'flycheck-warning nil :foreground ansi-color-yellow :weight 'normal)
-(set-face-attribute 'error nil :underline `(:style wave :color ,ansi-color-red) :foreground ansi-color-red)
+(set-face-attribute 'font-lock-number-face nil
+                    :foreground ansi-color-black)
+(set-face-attribute 'font-lock-operator-face nil
+                    :foreground ansi-color-black)
+(set-face-attribute 'font-lock-punctuation-face nil
+                    :foreground ansi-color-black)
+(set-face-attribute 'font-lock-bracket-face nil
+                    :foreground ansi-color-black)
+(set-face-attribute 'font-lock-delimiter-face nil
+                    :foreground ansi-color-black)
+(set-face-attribute 'font-lock-escape-face nil
+                    :foreground ansi-color-black)
+(set-face-attribute 'error nil
+                    :underline `(:style wave :color ,ansi-color-red) :weight 'normal)
+(set-face-attribute 'flycheck-warning nil
+                    :foreground ansi-color-yellow :weight 'normal)
+(set-face-attribute 'error nil
+                    :underline `(:style wave :color ,ansi-color-red)
+                    :foreground ansi-color-red)

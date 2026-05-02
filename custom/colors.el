@@ -182,8 +182,8 @@
       ansi-color-bright-cyan "#5AA098"
       ansi-color-white "#C8BFAE"
       ansi-color-bright-white "#DED7C5"
-      color-background "#F2EDE0"
-      color-dark-background "#DCD4C0"
-      color-region "#E5DCC4")
+      color-background "#FFFCEF"
+      color-dark-background "#F5EFDD"
+      color-region "#F5EFDD")
 
 (provide 'colors)
