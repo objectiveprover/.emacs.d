@@ -49,7 +49,8 @@
         breadcrumb
         magit
         git-gutter
-        spell-fu))
+        spell-fu
+        forth-mode))
 
 (use-package git-gutter
   :ensure t
@@ -438,19 +439,16 @@
 
 ;; Global UI
 (set-face-attribute 'mode-line nil
-                    :background color-dark-background
+                    :background color-region
                     :foreground ansi-color-black
                     :box '(:style flat-button :line-width 4))
-
 (set-face-attribute 'mode-line-inactive nil
-                    :background ansi-color-bright-white
-                    :foreground ansi-color-bright-black
+                    :background color-background
+                    :foreground ansi-color-yellow
                     :box '(:style flat-button :line-width 4))
-
 (set-face-attribute 'default nil
                     :foreground ansi-color-black
                     :background color-background)
-
 (set-face-background 'show-paren-match nil)
 (set-face-foreground 'show-paren-match ansi-color-red)
 (set-face-foreground 'line-number ansi-color-white)

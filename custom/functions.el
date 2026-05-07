@@ -55,21 +55,4 @@
         (emacs-lisp-docstring-fill-column t))
     (fill-paragraph nil region)))
 
-;; When navigating by words, consider spaces as words otherwise it's confusing
-;; to know where the pointer is going to go
-;; (defun custom/forward-word-with-space ()
-;;   "Move forward to the next space or word boundary."
-;;   (interactive)
-;;   (if (looking-at "[\\s-\\s.]+")
-;;       (skip-syntax-forward " ")
-;;     (forward-word)))
-
-;; ;; Same as (forward-space) but backwards
-;; (defun custom/backward-word-with-space ()
-;;   "Move backward to the previous space or word boundary."
-;;   (interactive)
-;;   (if (looking-back "[\\s-\\s.]+" nil)
-;;       (skip-syntax-backward " ")
-;;     (backward-word)))
-
 (provide 'functions)
