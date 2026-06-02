@@ -13,7 +13,8 @@
                   "add-hook"
                   "car"
                   "cdr"
-                  "concat")))
+                  "concat"
+                  "list")))
   (font-lock-add-keywords 'emacs-lisp-mode
     `((,(concat "\\_<" (regexp-opt keywords t) "\\_>")
        . font-lock-keyword-face))))
@@ -122,7 +123,7 @@
   (setq paren-face-modes '(prog-mode))
   (setq paren-face-regexp "[][()}{]"))
 
-;; Remove whitespace modeline indicator
+;; Remove whitespace mode-line indicator
 (use-package whitespace
   :delight whitespace-mode)
 
@@ -195,6 +196,7 @@
 
 ;; Display the undo tree
 (use-package vundo
+  :defer nil
   :ensure t
   :config
   (keymap-global-set (getkey "vundo") 'vundo)
@@ -259,7 +261,6 @@
 (use-package flycheck
   :ensure t
   :custom
-  ;;(flycheck-disabled-checkers '(emacs-lisp emacs-lisp-checkdoc))
   (flycheck-disabled-checkers '(emacs-lisp-checkdoc))
   (flycheck-mode-line-prefix " FC")
   (flycheck-emacs-lisp-load-path 'inherit)
@@ -273,12 +274,16 @@
                           (errors (or (cdr (assq 'error counts)) 0))
                           (warnings (or (cdr (assq 'warning counts)) 0))
                           (infos (or (cdr (assq 'info counts)) 0)))
-                     (format " E:%d W:%d I:%d " errors warnings infos)))
-                  (`running " FC:running")
-                  (`no-checker " FC:off")
-                  (`not-checked " FC:?")
-                  (`errored " FC:err")
-                  (`interrupted " FC:stopped")))))
+                     (concat
+                      (propertize (format "● %d " errors)  'face `(:foreground ,custom/color-red))
+                      (propertize (format "● %d " warnings) 'face `(:foreground ,custom/color-yellow))
+                      (propertize (format "● %d " infos) 'face `(:foreground ,custom/color-blue)))))
+                  ;;(format " ●:%d ▲:%d ⊙:%d " errors warnings infos)))
+                  (`running " Flyckeck:running")
+                  (`no-checker " Flycheck:off")
+                  (`not-checked " Flycheck:?")
+                  (`errored " Flycheck:err")
+                  (`interrupted " Flycheck:stopped")))))
 
 ;; Spell check for natural language
 ;; Requires Aspell
@@ -324,9 +329,62 @@
 ;; --------------------------------------------------
 ;; General settings
 
+;; Remove Charset indicators
+(setq-default mode-line-mule-info "")
+
+;; Remove TTY indicator
+(setq-default mode-line-front-space "")
+
+;; Remove the remote file indicator until needed
+(setq-default mode-line-remote
+  '(:eval (when (file-remote-p default-directory) "Remote file")))
+
+;; Remove the frame number since I don't need it
+(setq-default mode-line-frame-identification " ")
+
 ;; Automatically wrap comments
 (setq comment-auto-fill-only-comments t)
+(delight 'auto-fill-function nil t)
 (add-hook 'prog-mode-hook 'turn-on-auto-fill)
+
+(add-hook 'emacs-lisp-mode-hook
+          (lambda ()
+            (setq mode-name
+                  '("Elisp" (lexical-binding "[Lexical]" "[Dynamic]")))))
+
+(defun my/ml-render (left right)
+  "Return a mode-line construct with LEFT and RIGHT pushed to the edges."
+  (let ((width (string-width (format-mode-line right))))
+    (list left
+          (propertize " " 'display `(space :align-to (- right ,width)))
+          right)))
+
+(defun my/ml-status-circle ()
+  "Colored circle reflecting buffer save/modify/read-only state."
+  (let ((color (cond
+                ((not buffer-file-name)  custom/color-white) ; not a file
+                (buffer-read-only        custom/color-bright-black) ; read-only
+                ((buffer-modified-p)     custom/color-green) ; unsaved changes
+                (t                       custom/color-white)))) ; saved
+    (propertize "●" 'face `(:foreground ,color))))
+
+(setq-default mode-line-position '(:eval (format-mode-line "%l:%c")))
+
+(setq-default mode-line-format
+  '(:eval
+    (my/ml-render
+     ;; left segments
+     '(;"%e"
+       ;mode-line-front-space
+       (:eval (my/ml-status-circle))
+       " "
+       mode-line-buffer-identification
+       mode-line-position
+       "   "
+       mode-name)
+     ;; right segments
+     '(""
+       flycheck-mode-line vc-mode))))
 
 ;; How total number of matches when searching
 (setq isearch-lazy-count t)
