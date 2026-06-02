@@ -1,4 +1,5 @@
-;;; -*- lexical-binding: t -*-
+;; -*- lexical-binding: t; -*-
+
 (require 'package)
 
 ;; Highlight certain ubiquitous elisp functions as keywords to make code look
@@ -52,15 +53,18 @@
         spell-fu
         forth-mode))
 
+;; Avoid loading stuff when starting Emacs so it starts faster
+(setopt use-package-always-defer t)
+
 (use-package git-gutter
   :ensure t
   :delight
   :init
   (global-git-gutter-mode +1)
   :config
-  (set-face-attribute 'git-gutter:modified nil :foreground ansi-color-bright-blue :weight 'normal)
-  (set-face-attribute 'git-gutter:added nil :foreground ansi-color-bright-green :weight 'normal)
-  (set-face-attribute 'git-gutter:deleted nil :foreground ansi-color-bright-red :weight 'normal)
+  (set-face-attribute 'git-gutter:modified nil :foreground custom/color-bright-blue :weight 'normal)
+  (set-face-attribute 'git-gutter:added nil :foreground custom/color-bright-green :weight 'normal)
+  (set-face-attribute 'git-gutter:deleted nil :foreground custom/color-bright-red :weight 'normal)
   (custom-set-variables
    '(git-gutter:modified-sign "∓")
    '(git-gutter:added-sign "+")
@@ -100,10 +104,10 @@
   :config
   (keymap-global-set (getkey "treemacs") 'treemacs)
   (set-face-attribute 'treemacs-git-modified-face nil
-                      :foreground ansi-color-black
+                      :foreground custom/color-black
                       :slant 'normal)
   (set-face-attribute 'treemacs-git-added-face nil
-                      :foreground ansi-color-black))
+                      :foreground custom/color-black))
 
 ;; Add parentheses face everywhere
 (use-package paren-face
@@ -113,7 +117,7 @@
   (global-paren-face-mode)
   :config
   (set-face-attribute 'parenthesis nil
-                      :foreground ansi-color-white
+                      :foreground custom/color-white
                       :weight 'normal)
   (setq paren-face-modes '(prog-mode))
   (setq paren-face-regexp "[][()}{]"))
@@ -133,7 +137,6 @@
   :delight visual-line-mode)
 
 (use-package markdown-mode
-  :defer t
   :custom
   (fill-column 80)
   :init
@@ -146,7 +149,7 @@
               (whitespace-mode)
               (set-face-attribute 'whitespace-space nil
                                   :background nil
-                                  :foreground ansi-color-black
+                                  :foreground custom/color-black
                                   :weight 'bold)
               ;; We don't want highlighting long lines on Markdown documents
               ;; because every paragraph is a line.
@@ -156,7 +159,7 @@
               ;; I use as little syntax highlighting as possible, but sometimes
               ;; we ned to be able to visually parse text fast.
               (face-remap-add-relative 'font-lock-keyword-face
-                                       :foreground ansi-color-black)
+                                       :foreground custom/color-black)
               (font-lock-update))))
 
 ;; Select and edit multiple things at the same time
@@ -169,29 +172,7 @@
 
 ;; Version Control
 (use-package magit
-  :ensure t
-  :config
-  ;; (set-face-attribute
-  ;;  'magit-diff-added nil :background color-background :foreground color-black)
-  ;; (set-face-attribute
-  ;;  'magit-diff-removed nil :background color-background :foreground color-black)
-  ;; (set-face-attribute
-  ;;  'magit-diff-added-highlight nil :background color-background :foreground color-black)
-  ;; (set-face-attribute
-  ;;  'magit-diff-removed-highlight nil
-  ;;  :background color-background :foreground color-black)
-  ;; (set-face-attribute
-  ;;  'magit-diff-context-highlight nil
-  ;;  :background color-background :foreground color-black)
-  ;; (set-face-attribute
-  ;;  'magit-diff-hunk-heading-highlight nil
-  ;;  :background color-white :foreground color-black :weight 'bold)
-  ;; (set-face-attribute
-  ;;  'magit-diff-hunk-heading nil
-  ;;  :background color-white :foreground color-black :weight 'normal)
-  ;; (set-face-attribute
-  ;;  'magit-section-heading nil :background nil :foreground color-black)
-  )
+  :ensure t)
 
 ;; Increase selection in a semantic way
 (use-package expand-region
@@ -199,18 +180,17 @@
   :config
   (keymap-global-set (getkey "er/expand-region") 'er/expand-region))
 
+
 (use-package dired
   :custom
   (dired-listing-switches "-alh")
   (dired-dwim-target t)
   :config
-  (set-face-foreground 'dired-directory flexoki-blue-700)
-  (add-hook 'dired-hook #'dired-hide-details-mode))
+  (set-face-foreground 'dired-directory custom/color-blue))
 
 ;; A better experience for writing text
 (use-package olivetti
   :ensure t
-  :defer t
   :hook org-mode)
 
 ;; Display the undo tree
@@ -228,22 +208,19 @@
 (put 'narrow-to-region 'disabled nil) ; Enable narrow-to-region
 (use-package iedit
   :ensure t
-  :defer t
   :config
   (keymap-global-set (getkey "iedit-mode") 'iedit-mode)
-  (set-face-background 'iedit-occurrence color-white))
+  (set-face-background 'iedit-occurrence custom/color-white))
 
 ;; Show what functions are available on M-x
 (use-package vertico
   :ensure t
-  :defer t
   :init
   (vertico-mode))
 
 ;; Display descriptions of functions
 (use-package marginalia
   :ensure t
-  :defer t
   :init
   (marginalia-mode))
 
@@ -274,7 +251,6 @@
 ;; .editorconfig file support
 (use-package editorconfig
   :ensure t
-  :defer t
   :delight
   :config
   (editorconfig-mode +1))
@@ -306,6 +282,9 @@
 
 ;; Spell check for natural language
 ;; Requires Aspell
+(declare-function spell-fu-dictionary-add "spell-fu")
+(declare-function spell-fu-get-ispell-dictionary "spell-fu")
+(declare-function spell-fu-get-personal-dictionary "spell-fu")
 (use-package spell-fu
   :ensure t
   :config
@@ -319,10 +298,8 @@
       "en-personal"
       (expand-file-name "personal-dictionary.pws" user-emacs-directory))))
 
-  (add-hook 'spell-fu-mode-hook #'custom/spell-fu-add-personal-dict)
-  :custom-face
-  (spell-fu-incorrect-face
-   ((t (:underline nil :style wave :color ,ansi-color-red))))
+  (add-hook 'spell-fu-mode-hook 'custom/spell-fu-add-personal-dict)
+
   :custom
   (spell-fu-ignore-modes '(dired-mode))
   (spell-fu-faces-exclude
@@ -351,23 +328,14 @@
 (setq comment-auto-fill-only-comments t)
 (add-hook 'prog-mode-hook 'turn-on-auto-fill)
 
-;; Dictionary
-(setq dictionary-server "dict.org")
-
 ;; How total number of matches when searching
 (setq isearch-lazy-count t)
-
-;; Delay inline suggestions by 1 second
-(setq completion-preview-idle-delay 1)
 
 ;; Never use tabs for indentation
 (setq-default indent-tabs-mode nil)
 
 ;; Show recent files when invoking find-file
 (recentf-mode 1)
-
-;; Enable ANSI colors when using compile mode
-(add-hook 'compilation-filter-hook #'ansi-color-compilation-filter)
 
 ;; Auto-scroll when something repeatedly shows in the compile mode
 (with-eval-after-load 'compile
@@ -418,7 +386,7 @@
 
 ;; Display line numbers
 (global-display-line-numbers-mode 1)
-(setq display-line-numbers-type 'relative)
+(setopt display-line-numbers-type 'relative)
 
 ;; Display column numbers
 (setq column-number-mode t)
@@ -426,12 +394,14 @@
 ;; Enable auto-completion for code and text
 (use-package completion-preview
   :delight
+  :config
+  (setopt completion-preview-idle-delay 1)
   :init
   (global-completion-preview-mode))
 
 ;; Match delimiters
-(setq electric-pair-preserve-balance t)
-(setq electric-pair-delete-adjacent-pairs t)
+(setopt electric-pair-preserve-balance t)
+(setopt electric-pair-delete-adjacent-pairs t)
 (electric-pair-mode)
 
 ;; --------------------------------------------------
@@ -439,78 +409,78 @@
 
 ;; Global UI
 (set-face-attribute 'mode-line nil
-                    :background color-region
-                    :foreground ansi-color-black
+                    :background custom/color-region
+                    :foreground custom/color-black
                     :box '(:style flat-button :line-width 4))
 (set-face-attribute 'mode-line-inactive nil
-                    :background color-background
-                    :foreground ansi-color-yellow
+                    :background custom/color-background
+                    :foreground custom/color-yellow
                     :box '(:style flat-button :line-width 4))
 (set-face-attribute 'default nil
-                    :foreground ansi-color-black
-                    :background color-background)
+                    :foreground custom/color-black
+                    :background custom/color-background)
 (set-face-background 'show-paren-match nil)
-(set-face-foreground 'show-paren-match ansi-color-red)
-(set-face-foreground 'line-number ansi-color-white)
-(set-face-foreground 'line-number-current-line ansi-color-red)
-(set-face-background 'region color-region)
+(set-face-foreground 'show-paren-match custom/color-red)
+(set-face-foreground 'line-number custom/color-white)
+(set-face-foreground 'line-number-current-line custom/color-red)
+(set-face-background 'region custom/color-region)
 (set-face-attribute 'isearch nil
-                    :background color-dark-background
-                    :foreground ansi-color-red)
+                    :background custom/color-dark-background
+                    :foreground custom/color-red)
 (set-face-attribute 'lazy-highlight nil
-                    :background color-dark-background
-                    :foreground ansi-color-red)
+                    :background custom/color-dark-background
+                    :foreground custom/color-red)
 (set-face-attribute 'minibuffer-prompt nil
-                    :foreground ansi-color-black
+                    :foreground custom/color-black
                     :weight 'normal)
 (set-face-attribute 'highlight nil
-                    :background color-dark-background)
+                    :background custom/color-dark-background)
 (set-face-attribute 'cursor nil
-                    :foreground ansi-color-white)
+                    :foreground custom/color-white)
 
 ;; Syntax highlighting
 (set-face-attribute 'font-lock-function-name-face nil
-                    :foreground ansi-color-black)
+                    :foreground custom/color-black)
 (set-face-attribute 'font-lock-function-call-face nil
-                    :foreground ansi-color-black)
+                    :foreground custom/color-black)
 (set-face-attribute 'font-lock-variable-name-face nil
-                    :foreground ansi-color-black
+                    :foreground custom/color-black
                     :slant 'italic)
 (set-face-attribute 'font-lock-variable-use-face nil
-                    :foreground ansi-color-black)
+                    :foreground custom/color-black)
 (set-face-attribute 'font-lock-keyword-face nil
-                    :foreground ansi-color-black
+                    :foreground custom/color-black
                     :weight 'bold)
 (set-face-attribute 'font-lock-comment-face nil
                     :slant 'italic
-                    :foreground ansi-color-cyan)
+                    :foreground custom/color-cyan)
 (set-face-attribute 'font-lock-type-face nil
-                    :foreground ansi-color-black)
+                    :foreground custom/color-black)
 (set-face-attribute 'font-lock-constant-face nil
-                    :foreground ansi-color-black)
+                    :foreground custom/color-black)
 (set-face-attribute 'font-lock-builtin-face nil
-                    :foreground ansi-color-black
+                    :foreground custom/color-black
                     :weight 'bold
                     :slant 'italic)
 (set-face-attribute 'font-lock-string-face nil
                     :slant 'italic
-                    :foreground ansi-color-bright-black)
+                    :foreground custom/color-bright-black)
 (set-face-attribute 'font-lock-number-face nil
-                    :foreground ansi-color-black)
+                    :foreground custom/color-black)
 (set-face-attribute 'font-lock-operator-face nil
-                    :foreground ansi-color-black)
+                    :foreground custom/color-black)
 (set-face-attribute 'font-lock-punctuation-face nil
-                    :foreground ansi-color-black)
+                    :foreground custom/color-black)
 (set-face-attribute 'font-lock-bracket-face nil
-                    :foreground ansi-color-black)
+                    :foreground custom/color-black)
 (set-face-attribute 'font-lock-delimiter-face nil
-                    :foreground ansi-color-black)
+                    :foreground custom/color-black)
 (set-face-attribute 'font-lock-escape-face nil
-                    :foreground ansi-color-black)
+                    :foreground custom/color-black)
 (set-face-attribute 'error nil
-                    :underline `(:style wave :color ,ansi-color-red) :weight 'normal)
+                    :underline `(:style wave :color ,custom/color-red) :weight 'normal)
 (set-face-attribute 'flycheck-warning nil
-                    :foreground ansi-color-yellow :weight 'normal)
+                    :foreground custom/color-yellow :weight 'normal)
 (set-face-attribute 'error nil
-                    :underline `(:style wave :color ,ansi-color-red)
-                    :foreground ansi-color-red)
+                    :underline `(:style wave :color ,custom/color-red)
+                    :foreground custom/color-red)
