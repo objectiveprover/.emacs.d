@@ -327,7 +327,8 @@
     (propertize "●" 'face `(:foreground ,color))))
 
 ;; How to format the line/column indicator in the mode line
-(setq-default mode-line-position '(:eval (format-mode-line "%l:%c")))
+(setq-default mode-line-position '(:eval
+                                   (format-mode-line "%l")))
 
 ;; Custom mode line
 (setq-default mode-line-format
@@ -341,11 +342,16 @@
        mode-line-buffer-identification
        "   "
        mode-line-position
-       "   "
+       " of "
+       ;; NOTE: Pay attention if this causes performance issues since the lines
+       ;; need to be re-calculated every time
+       (:eval (number-to-string (count-lines (point-min) (point-max))))
+       " LOC   "
        mode-name)
      ;; right segments
      '(""
        flycheck-mode-line vc-mode))))
+
 
 ;; How total number of matches when searching
 (setq isearch-lazy-count t)
