@@ -25,8 +25,15 @@
 (require 'variables) ;; Global Variables
 (require 'colors) ;; Color palette
 (require 'functions) ;; Custom functions
-(require 'keybindings) ;; Keybindings reference (No keybindings set in there)
 
+;; The keybindings.el file lists all the custom keybindings, but we set them
+;; here. The reason is that it's confusing to get all the keybindings in this
+;; large file, if I list all the keybindings in a separate file then I can get a
+;; quick look at all of them at once.
+(require 'keybindings)
+
+;; Package repository
+;; TODO: I should get all the packages locally and not depend on a package manager
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
 ;; Install packages in this list with M-x package-install-selected-packages
@@ -34,12 +41,10 @@
 ;; I do this manually instead of relying on the automatic method of Emacs because
 ;; I like to know what's being installed and make sure it's all intentional.
 (setq package-selected-packages
-      '(olivetti
-        iedit
+      '(iedit
         vertico
         marginalia
         flycheck
-        geiser-chez
         yasnippet
         expand-region
         multiple-cursors
@@ -47,47 +52,40 @@
         paren-face
         treemacs
         delight
-        helpful
-        breadcrumb
         magit
         git-gutter
         spell-fu
-        forth-mode))
+        ;; Languages
+        forth-mode
+        geiser-chez
+        ))
 
 ;; Avoid loading stuff when starting Emacs so it starts faster
 (setopt use-package-always-defer t)
 
+;; Git indicators
 (use-package git-gutter
   :ensure t
   :delight
-  :init
-  (global-git-gutter-mode +1)
   :config
+  (setopt git-gutter:modified-sign "∓")
+  (setopt git-gutter:added-sign "+")
+  (setopt git-gutter:deleted-sign "-")
   (set-face-attribute 'git-gutter:modified nil :foreground custom/color-bright-blue :weight 'normal)
   (set-face-attribute 'git-gutter:added nil :foreground custom/color-bright-green :weight 'normal)
-  (set-face-attribute 'git-gutter:deleted nil :foreground custom/color-bright-red :weight 'normal)
-  (custom-set-variables
-   '(git-gutter:modified-sign "∓")
-   '(git-gutter:added-sign "+")
-   '(git-gutter:deleted-sign "-")))
+  (set-face-attribute 'git-gutter:deleted nil :foreground custom/color-bright-red :weight 'normal))
 
-(use-package breadcrumb
-  :ensure t)
+;; Only load Git indicators on code files, this way we avoid errors with other
+;; modes that try to take control of the screen's left padding.
+;; This wouldn't be needed on Emacs GUI but I use it on the terminal so there is
+;; no other option.
+(add-hook 'prog-mode-hook 'git-gutter-mode)
 
-(use-package helpful
-  :ensure t
-  :config
-  (keymap-global-set (getkey "helpful-callable") 'helpful-callable)
-  (keymap-global-set (getkey "helpful-variable") 'helpful-variable)
-  (keymap-global-set (getkey "helpful-key") 'helpful-key)
-  (keymap-global-set (getkey "helpful-command") 'helpful-command)
-  (keymap-global-set (getkey "helpful-at-point") 'helpful-at-point))
-
-(use-package delight
-  :ensure t)
-
-(use-package eldoc
-  :delight)
+;; Remove these indicators
+;; We do it here because we're not adding them with 'use-package'
+(delight `(
+           (eldoc nil t)
+           (auto-fill-function nil t)))
 
 ;; Code folding
 (use-package hideshow
@@ -123,45 +121,23 @@
   (setq paren-face-modes '(prog-mode))
   (setq paren-face-regexp "[][()}{]"))
 
-;; Remove whitespace mode-line indicator
+;; Whitespace indicators
 (use-package whitespace
-  :delight whitespace-mode)
+  :delight whitespace-mode
+  :init
+  (setopt whitespace-style '(face tabs spaces space-before-tab newline indentation empty
+                                  space-after-tab space-mark tab-mark newline-mark missing-newline-at-eof))
+  :custom-face
+  (whitespace-space ((t (:background nil :foreground ,custom/color-white)))))
 
-;; Center text
-(use-package visual-fill-column
-  :ensure t
-  :hook (visual-line-mode . visual-fill-column-for-vline)
-  :custom
-  (visual-fill-column-center-text t))
-
-(use-package simple
-  :delight visual-line-mode)
-
+;; Usually for writing prose, also soft-breaks lines to make them readable
+;; instead of them spanning the whole screen.
 (use-package markdown-mode
   :custom
   (fill-column 80)
-  :init
-  (add-hook 'visual-line-mode-hook #'visual-fill-column-for-vline)
-  :config
-  (add-hook 'markdown-mode-hook
-            (lambda ()
-              (auto-fill-mode -1)
-              (visual-line-mode)
-              (whitespace-mode)
-              (set-face-attribute 'whitespace-space nil
-                                  :background nil
-                                  :foreground custom/color-black
-                                  :weight 'bold)
-              ;; We don't want highlighting long lines on Markdown documents
-              ;; because every paragraph is a line.
-              (set-face-attribute 'whitespace-line nil
-                                  :background nil
-                                  :foreground nil)
-              ;; I use as little syntax highlighting as possible, but sometimes
-              ;; we ned to be able to visually parse text fast.
-              (face-remap-add-relative 'font-lock-keyword-face
-                                       :foreground custom/color-black)
-              (font-lock-update))))
+  :hook
+  (markdown-mode . visual-fill-column-mode)
+  (markdown-mode . visual-line-mode))
 
 ;; Select and edit multiple things at the same time
 (use-package multiple-cursors
@@ -181,18 +157,13 @@
   :config
   (keymap-global-set (getkey "er/expand-region") 'er/expand-region))
 
-
+;; File manager
 (use-package dired
   :custom
   (dired-listing-switches "-alh")
   (dired-dwim-target t)
   :config
   (set-face-foreground 'dired-directory custom/color-blue))
-
-;; A better experience for writing text
-(use-package olivetti
-  :ensure t
-  :hook org-mode)
 
 ;; Display the undo tree
 (use-package vundo
@@ -226,14 +197,6 @@
   :init
   (marginalia-mode))
 
-;; Make all whitespace characters visible
-(use-package whitespace
-  :config
-  ;; (set-face-attribute 'whitespace-line nil
-  ;;                     :background color-white
-  ;;                     :foreground color-black)
-  )
-
 ;; Persist history over Emacs restarts.
 ;; - Vertico sorts by history position.
 (use-package savehist
@@ -249,13 +212,6 @@
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles partial-completion))))
   (completion-pcm-leading-wildcard t))
-
-;; .editorconfig file support
-(use-package editorconfig
-  :ensure t
-  :delight
-  :config
-  (editorconfig-mode +1))
 
 ;; Enable code checking
 (use-package flycheck
@@ -295,6 +251,8 @@
   :config
   (spell-fu-global-mode)
 
+  ;; There are lots of technical words that we don't want to get flagged as
+  ;; typos, so I'm using a local custom dictionary where I add all the words.
   (defun custom/spell-fu-add-personal-dict ()
     (spell-fu-dictionary-add
      (spell-fu-get-ispell-dictionary "en_US"))
@@ -324,8 +282,6 @@
   :init
   (yas-global-mode 1))
 
-(require 'languages)
-
 ;; --------------------------------------------------
 ;; General settings
 
@@ -344,22 +300,24 @@
 
 ;; Automatically wrap comments
 (setq comment-auto-fill-only-comments t)
-(delight 'auto-fill-function nil t)
 (add-hook 'prog-mode-hook 'turn-on-auto-fill)
 
+;; Customize the name of Elisp with explicit indication of lexical/dynamic binding
 (add-hook 'emacs-lisp-mode-hook
           (lambda ()
             (setq mode-name
-                  '("Elisp" (lexical-binding "[Lexical]" "[Dynamic]")))))
+                  '("Elisp" (lexical-binding "[Lexical Binding]" "[Dynamic Binding]")))))
 
-(defun my/ml-render (left right)
+(defun custom/modeline-renderer (left right)
   "Return a mode-line construct with LEFT and RIGHT pushed to the edges."
   (let ((width (string-width (format-mode-line right))))
     (list left
           (propertize " " 'display `(space :align-to (- right ,width)))
           right)))
 
-(defun my/ml-status-circle ()
+;; Next to the file name in the mode line we have an indicator that indicates
+;; the status of that file
+(defun custom/file-status-indicator ()
   "Colored circle reflecting buffer save/modify/read-only state."
   (let ((color (cond
                 ((not buffer-file-name)  custom/color-white) ; not a file
@@ -368,17 +326,20 @@
                 (t                       custom/color-white)))) ; saved
     (propertize "●" 'face `(:foreground ,color))))
 
+;; How to format the line/column indicator in the mode line
 (setq-default mode-line-position '(:eval (format-mode-line "%l:%c")))
 
+;; Custom mode line
 (setq-default mode-line-format
   '(:eval
-    (my/ml-render
+    (custom/modeline-renderer
      ;; left segments
      '(;"%e"
        ;mode-line-front-space
-       (:eval (my/ml-status-circle))
+       (:eval (custom/file-status-indicator))
        " "
        mode-line-buffer-identification
+       "   "
        mode-line-position
        "   "
        mode-name)
@@ -397,7 +358,7 @@
 
 ;; Auto-scroll when something repeatedly shows in the compile mode
 (with-eval-after-load 'compile
-  (setq compilation-scroll-output t))
+  (setopt compilation-scroll-output t))
 
 ;; Show what keybindings are available after a prefix like C-x or C-c.
 (use-package which-key
@@ -542,3 +503,23 @@
 (set-face-attribute 'error nil
                     :underline `(:style wave :color ,custom/color-red)
                     :foreground custom/color-red)
+
+;; --------------------------------------------------
+;; Scheme (Chez Scheme)
+
+(use-package geiser-chez
+  :ensure t
+  :defer t
+  :custom
+  (geiser-chez-binary "chez"))
+
+;; --------------------------------------------------
+;; Forth (GForth)
+
+(use-package forth-mode
+  :ensure t
+  :mode ("\\.fs\\'" . forth-mode)
+  :commands (forth-mode run-forth)
+  :config
+  (require 'forth-block-mode)
+  (require 'forth-interaction-mode))
