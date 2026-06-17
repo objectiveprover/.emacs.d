@@ -2,7 +2,7 @@
 
 (require 'package)
 
-;;  Highlight certain ubiquitous elisp functions as keywords to make code look
+;; Highlight certain ubiquitous elisp functions as keywords to make code look
 ;; nicer to read.
 (let ((keywords '("add-to-list"
                   "set-face-attribute"
@@ -19,8 +19,8 @@
     `((,(concat "\\_<" (regexp-opt keywords t) "\\_>")
        . font-lock-keyword-face))))
 
-(add-to-list 'load-path (expand-file-name "packages" user-emacs-directory)) ; Third party code
-(add-to-list 'load-path (expand-file-name "custom" user-emacs-directory)) ; My code
+;; My custom code
+(add-to-list 'load-path (expand-file-name "custom" user-emacs-directory))
 
 (require 'variables) ;; Global Variables
 (require 'colors) ;; Color palette
