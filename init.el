@@ -318,7 +318,7 @@ Returns \"<icon> master\" clean, \"<icon> *master\" when modified;
 the leading space is prepended later by `vc-mode-line'."
   (let ((face   (get-text-property 0 'face s))
         (branch (substring s 4)))
-    (propertize (concat custom/vc-git-icon " " branch)
+    (propertize (concat custom/vc-git-icon " " branch " ")
                 'face face)))
 
 (advice-add 'vc-git-mode-line-string :filter-return #'custom/vc-git-mode-line)
@@ -339,7 +339,7 @@ the leading space is prepended later by `vc-mode-line'."
                 (buffer-read-only        custom/color-bright-black) ; read-only
                 ((buffer-modified-p)     custom/color-green) ; unsaved changes
                 (t                       custom/color-white)))) ; saved
-    (propertize "●" 'face `(:foreground ,color))))
+    (propertize " ●" 'face `(:foreground ,color))))
 
 ;; How to format the line/column indicator in the mode line
 (setq-default mode-line-position '(:eval
