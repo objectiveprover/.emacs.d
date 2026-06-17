@@ -2,7 +2,7 @@
 
 (require 'package)
 
-;; Highlight certain ubiquitous elisp functions as keywords to make code look
+;;  Highlight certain ubiquitous elisp functions as keywords to make code look
 ;; nicer to read.
 (let ((keywords '("add-to-list"
                   "set-face-attribute"
@@ -64,13 +64,14 @@
 (setopt use-package-always-defer t)
 
 ;; Git indicators
+;; Note: this needs a patched "nerd fonts" for the icons, I use Maple Mono
 (use-package git-gutter
   :ensure t
   :delight
   :config
-  (setopt git-gutter:modified-sign "∓")
-  (setopt git-gutter:added-sign "+")
-  (setopt git-gutter:deleted-sign "-")
+  (setopt git-gutter:modified-sign "\uf440")
+  (setopt git-gutter:added-sign "\uf067")
+  (setopt git-gutter:deleted-sign "\uf068")
   (set-face-attribute 'git-gutter:modified nil :foreground custom/color-bright-blue :weight 'normal)
   (set-face-attribute 'git-gutter:added nil :foreground custom/color-bright-green :weight 'normal)
   (set-face-attribute 'git-gutter:deleted nil :foreground custom/color-bright-red :weight 'normal))
@@ -234,7 +235,6 @@
                       (propertize (format "● %d " errors)  'face `(:foreground ,custom/color-red))
                       (propertize (format "● %d " warnings) 'face `(:foreground ,custom/color-yellow))
                       (propertize (format "● %d " infos) 'face `(:foreground ,custom/color-blue)))))
-                  ;;(format " ●:%d ▲:%d ⊙:%d " errors warnings infos)))
                   (`running " Flyckeck:running")
                   (`no-checker " Flycheck:off")
                   (`not-checked " Flycheck:?")
@@ -306,7 +306,22 @@
 (add-hook 'emacs-lisp-mode-hook
           (lambda ()
             (setq mode-name
-                  '("Elisp" (lexical-binding "[Lexical Binding]" "[Dynamic Binding]")))))
+                  '("Elisp" (lexical-binding " \uf0ec Lexical" "Dynamic")))))
+
+(defconst custom/vc-git-icon "\ue0a0"
+  "Branch glyph (U+E0A0, Powerline/Nerd Font set).")
+
+(defun custom/vc-git-mode-line (s)
+  "Swap the \"Git\" backend name in S for a branch icon.
+S is like \"Git-master\": index 3 is the state char, 4+ the branch.
+Returns \"<icon> master\" clean, \"<icon> *master\" when modified;
+the leading space is prepended later by `vc-mode-line'."
+  (let ((face   (get-text-property 0 'face s))
+        (branch (substring s 4)))
+    (propertize (concat custom/vc-git-icon " " branch)
+                'face face)))
+
+(advice-add 'vc-git-mode-line-string :filter-return #'custom/vc-git-mode-line)
 
 (defun custom/modeline-renderer (left right)
   "Return a mode-line construct with LEFT and RIGHT pushed to the edges."
@@ -338,15 +353,15 @@
      '(;"%e"
        ;mode-line-front-space
        (:eval (custom/file-status-indicator))
-       " "
+       "  "
        mode-line-buffer-identification
-       "   "
+       "   \uebd0  "
        mode-line-position
        " of "
        ;; NOTE: Pay attention if this causes performance issues since the lines
        ;; need to be re-calculated every time
        (:eval (number-to-string (count-lines (point-min) (point-max))))
-       " LOC   "
+       "    "
        mode-name)
      ;; right segments
      '(""
