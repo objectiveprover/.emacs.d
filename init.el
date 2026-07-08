@@ -365,7 +365,7 @@ the leading space is prepended later by `vc-mode-line'."
        mode-name)
      ;; right segments
      '(""
-       flycheck-mode-line vc-mode))))
+       flycheck-mode-line "  " vc-mode))))
 
 
 ;; How total number of matches when searching

@@ -1,8 +1,8 @@
 # -*- mode: snippet -*-
 # name: commentsection
-# key: commentsection
+# key: //-
 # --
 /* ==================================================
-$1
+   $1
                                                    */
 $0
