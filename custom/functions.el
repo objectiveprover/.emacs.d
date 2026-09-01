@@ -22,28 +22,47 @@
    (when (= orig-point (point))
      (move-beginning-of-line 1))))
 
+;;; Clipboard integration
+(defconst custom/clipboard-paste-command
+  (cond ((eq system-type 'darwin) "pbpaste")
+        ((getenv "WAYLAND_DISPLAY") "wl-paste --no-newline")
+        ((getenv "DISPLAY") "xclip -selection clipboard -o")
+        (t nil))
+  "Shell command writing the system clipboard to stdout, or nil if unavailable.")
+
+(defun custom/osc52-copy (text)
+  "Send TEXT to the terminal's clipboard via OSC 52.
+Wraps the sequence for tmux/screen passthrough when running inside either."
+  (let* ((payload (base64-encode-string
+                   (encode-coding-string text 'utf-8) t))
+         (seq (format "\e]52;c;%s\a" payload)))
+    (send-string-to-terminal
+     (cond ((getenv "TMUX")
+            (format "\ePtmux;\e%s\e\\" seq))
+           ((string-prefix-p "screen" (or (getenv "TERM") ""))
+            (format "\eP%s\e\\" seq))
+           (t seq)))))
+
 (defun custom/copy-to-clipboard ()
-  "Copies selection to x-clipboard."
+  "Copy the active region to the system clipboard."
   (interactive)
-  (if (display-graphic-p)
-      (progn
-	(message "Yanked region to x-clipboard!")
-	(call-interactively 'clipboard-kill-ring-save))
-    (if (region-active-p)
-	(progn
-	  (shell-command-on-region (region-beginning) (region-end) "pbcopy")
-	  (message "Yanked region to clipboard!")
-	  (deactivate-mark))
-      (message "No region active; can't yank to clipboard!"))))
+  (cond ((display-graphic-p)
+         (call-interactively #'clipboard-kill-ring-save)
+         (message "Yanked region to clipboard"))
+        ((region-active-p)
+         (custom/osc52-copy (buffer-substring-no-properties
+                             (region-beginning) (region-end)))
+         (deactivate-mark)
+         (message "Yanked region to clipboard"))
+        (t (message "No region active; can't yank to clipboard"))))
 
 (defun custom/paste-from-clipboard ()
-  "Pastes from x-clipboard."
+  "Insert the system clipboard at point."
   (interactive)
-  (if (display-graphic-p)
-      (progn
-	(clipboard-yank)
-	(message "graphics active"))
-    (insert (shell-command-to-string "pbpaste"))))
+  (cond ((display-graphic-p) (clipboard-yank))
+        (custom/clipboard-paste-command
+         (insert (shell-command-to-string custom/clipboard-paste-command)))
+        (t (message "No clipboard reader available; use the terminal's paste"))))
 
 ;; Stefan Monnier <foo at acm.org>.
 ;; It is the opposite of fill-paragraph

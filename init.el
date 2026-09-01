@@ -55,6 +55,7 @@
         magit
         git-gutter
         spell-fu
+	delight
         ;; Languages
         forth-mode
         geiser-chez
@@ -72,9 +73,9 @@
   (setopt git-gutter:modified-sign "\uf440")
   (setopt git-gutter:added-sign "\uf067")
   (setopt git-gutter:deleted-sign "\uf068")
-  (set-face-attribute 'git-gutter:modified nil :foreground custom/color-bright-blue :weight 'normal)
-  (set-face-attribute 'git-gutter:added nil :foreground custom/color-bright-green :weight 'normal)
-  (set-face-attribute 'git-gutter:deleted nil :foreground custom/color-bright-red :weight 'normal))
+  (set-face-attribute 'git-gutter:modified nil :foreground custom/color-3 :weight 'normal)
+  (set-face-attribute 'git-gutter:added nil :foreground custom/color-3 :weight 'normal)
+  (set-face-attribute 'git-gutter:deleted nil :foreground custom/color-3 :weight 'normal))
 
 ;; Only load Git indicators on code files, this way we avoid errors with other
 ;; modes that try to take control of the screen's left padding.
@@ -84,9 +85,13 @@
 
 ;; Remove these indicators
 ;; We do it here because we're not adding them with 'use-package'
-(delight `(
-           (eldoc nil t)
-           (auto-fill-function nil t)))
+(use-package delight
+  :ensure t
+  :config
+  (delight `(
+             (eldoc nil t)
+             (auto-fill-function nil t))))
+
 
 ;; Code folding
 (use-package hideshow
@@ -117,7 +122,7 @@
   (global-paren-face-mode)
   :config
   (set-face-attribute 'parenthesis nil
-                      :foreground custom/color-white
+                      :foreground custom/color-3
                       :weight 'normal)
   (setq paren-face-modes '(prog-mode))
   (setq paren-face-regexp "[][()}{]"))
@@ -232,9 +237,9 @@
                           (warnings (or (cdr (assq 'warning counts)) 0))
                           (infos (or (cdr (assq 'info counts)) 0)))
                      (concat
-                      (propertize (format "● %d " errors)  'face `(:foreground ,custom/color-red))
-                      (propertize (format "● %d " warnings) 'face `(:foreground ,custom/color-yellow))
-                      (propertize (format "● %d " infos) 'face `(:foreground ,custom/color-blue)))))
+                      (propertize (format "● %d " errors)  'face `(:foreground ,custom/color-error))
+                      (propertize (format "● %d " warnings) 'face `(:foreground ,custom/color-warning))
+                      (propertize (format "● %d " infos) 'face `(:foreground ,custom/color-info)))))
                   (`running " Flyckeck:running")
                   (`no-checker " Flycheck:off")
                   (`not-checked " Flycheck:?")
@@ -351,7 +356,7 @@ the leading space is prepended later by `vc-mode-line'."
     (custom/modeline-renderer
      ;; left segments
      '(;"%e"
-       ;mode-line-front-space
+       ;;mode-line-front-space
        (:eval (custom/file-status-indicator))
        "  "
        mode-line-buffer-identification
@@ -420,6 +425,8 @@ the leading space is prepended later by `vc-mode-line'."
 
 ;; Hide menu bar
 (menu-bar-mode -1)
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
 
 ;; Ask for Y or N instead of Yes or No
 (defalias 'yes-or-no-p 'y-or-n-p)
@@ -445,24 +452,35 @@ the leading space is prepended later by `vc-mode-line'."
 (electric-pair-mode)
 
 ;; --------------------------------------------------
-;; Color customization
+;; Visual customization
 
 ;; Global UI
+(setopt fringe-styles 10)
+(set-face-attribute 'fringe nil
+                    :background custom/color-background)
+(set-face-attribute 'button nil
+                    :foreground custom/color-2)
 (set-face-attribute 'mode-line nil
-                    :background custom/color-region
-                    :foreground custom/color-black
+                    :background custom/color-5
+                    :foreground custom/color-2
                     :box '(:style flat-button :line-width 4))
 (set-face-attribute 'mode-line-inactive nil
-                    :background custom/color-background
-                    :foreground custom/color-yellow
+                    :background custom/color-5
+                    :foreground custom/color-3
                     :box '(:style flat-button :line-width 4))
 (set-face-attribute 'default nil
                     :foreground custom/color-black
                     :background custom/color-background)
-(set-face-background 'show-paren-match nil)
-(set-face-foreground 'show-paren-match custom/color-red)
-(set-face-foreground 'line-number custom/color-white)
-(set-face-foreground 'line-number-current-line custom/color-red)
+
+(set-face-attribute 'show-paren-match nil
+                    :foreground custom/color-1
+                    :background custom/color-background
+                    :weight 'bold)
+
+(set-face-foreground 'line-number custom/color-3)
+(set-face-attribute 'line-number-current-line nil
+                    :foreground custom/color-black)
+
 (set-face-background 'region custom/color-region)
 (set-face-attribute 'isearch nil
                     :background custom/color-dark-background
@@ -493,7 +511,7 @@ the leading space is prepended later by `vc-mode-line'."
                     :weight 'bold)
 (set-face-attribute 'font-lock-comment-face nil
                     :slant 'italic
-                    :foreground custom/color-cyan)
+                    :foreground custom/color-2)
 (set-face-attribute 'font-lock-type-face nil
                     :foreground custom/color-black)
 (set-face-attribute 'font-lock-constant-face nil
@@ -504,7 +522,7 @@ the leading space is prepended later by `vc-mode-line'."
                     :slant 'italic)
 (set-face-attribute 'font-lock-string-face nil
                     :slant 'italic
-                    :foreground custom/color-bright-black)
+                    :foreground custom/color-1)
 (set-face-attribute 'font-lock-number-face nil
                     :foreground custom/color-black)
 (set-face-attribute 'font-lock-operator-face nil

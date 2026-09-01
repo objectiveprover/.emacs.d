@@ -1,7 +1,7 @@
 ;; -*- lexical-binding: t; -*-
 
-(defconst custom/color-black "#696688")
-(defconst custom/color-bright-black "#716ba1")
+(defconst custom/color-black "#d6d8d9")
+(defconst custom/color-bright-black "#ffffff")
 (defconst custom/color-red "#B85868")
 (defconst custom/color-bright-red "#C96878")
 (defconst custom/color-green "#6E8A4A")
@@ -14,10 +14,21 @@
 (defconst custom/color-bright-magenta "#9F6AA8")
 (defconst custom/color-cyan "#4A8A85")
 (defconst custom/color-bright-cyan "#5AA098")
-(defconst custom/color-white "#C8BFAE")
-(defconst custom/color-bright-white "#DED7C5")
-(defconst custom/color-background "#FFFCEF")
-(defconst custom/color-dark-background "#F5EFDD")
-(defconst custom/color-region "#F5EFDD")
+(defconst custom/color-white "#333333")
+(defconst custom/color-bright-white "#111111")
+(defconst custom/color-background "#131617")
+(defconst custom/color-dark-background "#444444")
+(defconst custom/color-region "#2a2a2a")
+
+(defconst custom/color-error "#B2828A")
+(defconst custom/color-warning "#B2A676")
+(defconst custom/color-info "#677E9A")
+
+(defconst custom/color-1 "#ffffff")
+(defconst custom/color-2 "#788085")
+(defconst custom/color-3 "#777777")
+(defconst custom/color-4 "#555555")
+(defconst custom/color-5 "#222222")
+
 
 (provide 'colors)
