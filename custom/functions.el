@@ -22,7 +22,7 @@
    (when (= orig-point (point))
      (move-beginning-of-line 1))))
 
-;;; Clipboard integration
+;; Clipboard integration
 (defconst custom/clipboard-paste-command
   (cond ((eq system-type 'darwin) "pbpaste")
         ((getenv "WAYLAND_DISPLAY") "wl-paste --no-newline")

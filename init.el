@@ -64,6 +64,11 @@
 ;; Avoid loading stuff when starting Emacs so it starts faster
 (setopt use-package-always-defer t)
 
+;; Make the cursor to stop blinking
+;; Note: This depends on the terminal emulator about what "visible" means
+(setopt visible-cursor nil)
+(blink-cursor-mode nil)
+
 ;; Git indicators
 ;; Note: this needs a patched "nerd fonts" for the icons, I use Maple Mono
 (use-package git-gutter
@@ -73,9 +78,9 @@
   (setopt git-gutter:modified-sign "\uf440")
   (setopt git-gutter:added-sign "\uf067")
   (setopt git-gutter:deleted-sign "\uf068")
-  (set-face-attribute 'git-gutter:modified nil :foreground custom/color-3 :weight 'normal)
-  (set-face-attribute 'git-gutter:added nil :foreground custom/color-3 :weight 'normal)
-  (set-face-attribute 'git-gutter:deleted nil :foreground custom/color-3 :weight 'normal))
+  (set-face-attribute 'git-gutter:modified nil :foreground custom/color-4 :weight 'normal)
+  (set-face-attribute 'git-gutter:added nil :foreground custom/color-4 :weight 'normal)
+  (set-face-attribute 'git-gutter:deleted nil :foreground custom/color-4 :weight 'normal))
 
 ;; Only load Git indicators on code files, this way we avoid errors with other
 ;; modes that try to take control of the screen's left padding.
@@ -122,7 +127,7 @@
   (global-paren-face-mode)
   :config
   (set-face-attribute 'parenthesis nil
-                      :foreground custom/color-3
+                      :foreground custom/color-4
                       :weight 'normal)
   (setq paren-face-modes '(prog-mode))
   (setq paren-face-regexp "[][()}{]"))
@@ -466,7 +471,7 @@ the leading space is prepended later by `vc-mode-line'."
                     :box '(:style flat-button :line-width 4))
 (set-face-attribute 'mode-line-inactive nil
                     :background custom/color-5
-                    :foreground custom/color-3
+                    :foreground custom/color-4
                     :box '(:style flat-button :line-width 4))
 (set-face-attribute 'default nil
                     :foreground custom/color-black
@@ -477,22 +482,23 @@ the leading space is prepended later by `vc-mode-line'."
                     :background custom/color-background
                     :weight 'bold)
 
-(set-face-foreground 'line-number custom/color-3)
+(set-face-foreground 'line-number custom/color-4)
 (set-face-attribute 'line-number-current-line nil
-                    :foreground custom/color-black)
+                    :foreground custom/color-2)
 
-(set-face-background 'region custom/color-region)
+(set-face-background 'region custom/color-5)
 (set-face-attribute 'isearch nil
-                    :background custom/color-dark-background
-                    :foreground custom/color-red)
+                    :background custom/color-5
+                    :foreground custom/color-black
+                    :weight 'bold)
 (set-face-attribute 'lazy-highlight nil
-                    :background custom/color-dark-background
-                    :foreground custom/color-red)
+                    :background custom/color-5
+                    :foreground custom/color-black)
 (set-face-attribute 'minibuffer-prompt nil
                     :foreground custom/color-black
                     :weight 'normal)
 (set-face-attribute 'highlight nil
-                    :background custom/color-dark-background)
+                    :background custom/color-5)
 (set-face-attribute 'cursor nil
                     :foreground custom/color-white)
 
@@ -511,7 +517,7 @@ the leading space is prepended later by `vc-mode-line'."
                     :weight 'bold)
 (set-face-attribute 'font-lock-comment-face nil
                     :slant 'italic
-                    :foreground custom/color-2)
+                    :foreground custom/color-3)
 (set-face-attribute 'font-lock-type-face nil
                     :foreground custom/color-black)
 (set-face-attribute 'font-lock-constant-face nil

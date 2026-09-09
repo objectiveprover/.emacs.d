@@ -1,7 +1,7 @@
 ;; -*- lexical-binding: t; -*-
 
-(defconst custom/color-black "#d6d8d9")
-(defconst custom/color-bright-black "#ffffff")
+(defconst custom/color-black "#222222")
+(defconst custom/color-bright-black "#111111")
 (defconst custom/color-red "#B85868")
 (defconst custom/color-bright-red "#C96878")
 (defconst custom/color-green "#6E8A4A")
@@ -16,7 +16,7 @@
 (defconst custom/color-bright-cyan "#5AA098")
 (defconst custom/color-white "#333333")
 (defconst custom/color-bright-white "#111111")
-(defconst custom/color-background "#131617")
+(defconst custom/color-background "#ffffff")
 (defconst custom/color-dark-background "#444444")
 (defconst custom/color-region "#2a2a2a")
 
@@ -24,11 +24,11 @@
 (defconst custom/color-warning "#B2A676")
 (defconst custom/color-info "#677E9A")
 
-(defconst custom/color-1 "#ffffff")
-(defconst custom/color-2 "#788085")
-(defconst custom/color-3 "#777777")
-(defconst custom/color-4 "#555555")
-(defconst custom/color-5 "#222222")
+(defconst custom/color-1 "#2E2E2E")
+(defconst custom/color-2 "#494949")
+(defconst custom/color-3 "#707070")
+(defconst custom/color-4 "#BBBBBB")
+(defconst custom/color-5 "#EDEDED")
 
 
 (provide 'colors)
