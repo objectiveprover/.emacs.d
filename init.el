@@ -56,16 +56,23 @@
         git-gutter
         spell-fu
 	delight
+        aggressive-indent
+        paredit
         forth-mode ; Forth
         geiser-chez ; Chez
         cider ; Clojure
-        ;;aggressive-indent
         web-mode
         emmet-mode
         ))
 
 ;; Avoid loading stuff when starting Emacs so it starts faster
 (setopt use-package-always-defer t)
+
+;; Keep parentheses
+(use-package paredit
+  :hook ((emacs-lisp-mode . paredit-mode)
+         (lisp-mode . paredit-mode)
+         (scheme-mode . paredit-mode)))
 
 ;; Make the cursor to stop blinking
 ;; Note: This depends on the terminal emulator about what "visible" means
@@ -144,7 +151,7 @@
   :custom-face
   (whitespace-space ((t (:background nil :foreground ,custom/color-white)))))
 
-;; Usually for writing prose, also soft-breaks lines to make them readable
+;; For writing prose, also soft-breaks lines to make them readable
 ;; instead of them spanning the whole screen.
 (use-package markdown-mode
   :custom
@@ -152,6 +159,11 @@
   :hook
   (markdown-mode . visual-fill-column-mode)
   (markdown-mode . visual-line-mode))
+
+(use-package org-mode
+  :hook
+  (org-mode . visual-fill-column-mode)
+  (org-mode . visual-line-mode))
 
 ;; Select and edit multiple things at the same time
 (use-package multiple-cursors
@@ -252,13 +264,13 @@
                       (propertize (format "● %d " warnings) 'face `(:foreground ,custom/color-warning))
                       (propertize (format "● %d " infos) 'face `(:foreground ,custom/color-info)))))
                   (`running " Flyckeck:running")
-                  (`no-checker "")
-                  (`not-checked " Flycheck:?")
-                  (`errored " Flycheck:err")
+                  (`no-checker nil)
+                  (`not-checked nil)
+                  (`errored " Flycheck:error")
                   (`interrupted " Flycheck:stopped")))))
 
-;; Spell check for natural language
-;; Requires Aspell
+;; Spell check for natural languages
+;; Requires Aspell and the English dictionary ("en_US)
 (declare-function spell-fu-dictionary-add "spell-fu")
 (declare-function spell-fu-get-ispell-dictionary "spell-fu")
 (declare-function spell-fu-get-personal-dictionary "spell-fu")
@@ -339,50 +351,32 @@ the leading space is prepended later by `vc-mode-line'."
 
 (advice-add 'vc-git-mode-line-string :filter-return #'custom/vc-git-mode-line)
 
-(defun custom/modeline-renderer (left right)
-  "Return a mode-line construct with LEFT and RIGHT pushed to the edges."
-  (let ((width (string-width (format-mode-line right))))
-    (list left
-          (propertize " " 'display `(space :align-to (- right ,width)))
-          right)))
-
-;; Next to the file name in the mode line we have an indicator that indicates
+;; Next to the file name in the mode line we have an indicator that shows
 ;; the status of that file
 (defun custom/file-status-indicator ()
   "Colored circle reflecting buffer save/modify/read-only state."
   (let ((color (cond
-                ((not buffer-file-name)  custom/color-white) ; not a file
-                (buffer-read-only        custom/color-bright-black) ; read-only
-                ((buffer-modified-p)     custom/color-green) ; unsaved changes
-                (t                       custom/color-white)))) ; saved
+                (buffer-read-only custom/color-bright-black) ; read-only
+                ((buffer-modified-p) custom/color-green) ; unsaved changes
+                (t custom/color-white)))) ; saved
     (propertize " ●" 'face `(:foreground ,color))))
-
-;; How to format the line/column indicator in the mode line
-(setq-default mode-line-position '(:eval
-                                   (format-mode-line "%l")))
 
 ;; Custom mode line
 (setq-default mode-line-format
-  '(:eval
-    (custom/modeline-renderer
-     ;; left segments
-     '(;"%e"
-       ;;mode-line-front-space
-       (:eval (custom/file-status-indicator))
-       "  "
-       mode-line-buffer-identification
-       "   \uebd0  "
-       mode-line-position
-       " of "
-       ;; NOTE: Pay attention if this causes performance issues since the lines
-       ;; need to be re-calculated every time
-       (:eval (number-to-string (count-lines (point-min) (point-max))))
-       "    "
-       mode-name)
-     ;; right segments
-     '(""
-       flycheck-mode-line "  " vc-mode))))
-
+              '("%1."
+                (buffer-file-truename
+                 ((:eval (custom/file-status-indicator)) "%2."))
+                (:eval (propertize (or buffer-file-truename (buffer-name))
+                                       'face '(:weight bold)))
+                "%4.\uebd0%2."
+                (:eval (format-mode-line "%l"))
+                " of "
+                (:eval (number-to-string (count-lines (point-min) (point-max))))
+                "%4."
+                mode-name
+                (vc-mode ("%4." vc-mode))
+                "%4."
+                flycheck-mode-line))
 
 ;; How total number of matches when searching
 (setq isearch-lazy-count t)

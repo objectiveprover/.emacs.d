@@ -1,10 +1,11 @@
-personal_ws-1.1 en 116 
+personal_ws-1.1 en 122 
 alh
 alist
 autoload
 autosave
 autosaves
 axioma
+backend
 bg
 calc
 canonicalurl
@@ -41,8 +42,11 @@ fieldset
 filetags
 flexoki
 flycheck
+flyckeck
 flyspell
+fs
 fu
+gforth
 ghci
 ghostty
 gpg
@@ -81,7 +85,9 @@ pbpaste
 pdfs
 petri
 png
+powerline
 preload
+prepended
 prev
 prolog
 pws
