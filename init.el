@@ -2,8 +2,8 @@
 
 (require 'package)
 
-;; Highlight certain ubiquitous elisp functions as keywords to make code look
-;; nicer to read.
+;; Highlight certain ubiquitous elisp functions as keywords to make
+;; code nicer to read.
 (let ((keywords '("add-to-list"
                   "set-face-attribute"
                   "set-face-background"
@@ -56,9 +56,12 @@
         git-gutter
         spell-fu
 	delight
-        ;; Languages
-        forth-mode
-        geiser-chez
+        forth-mode ; Forth
+        geiser-chez ; Chez
+        cider ; Clojure
+        ;;aggressive-indent
+        web-mode
+        emmet-mode
         ))
 
 ;; Avoid loading stuff when starting Emacs so it starts faster
@@ -234,6 +237,9 @@
   :init
   (global-flycheck-mode)
   :config
+  (global-flycheck-lsp-mode 1)
+  (setq-default flycheck-disabled-checkers
+                (cons 'css-stylelint (default-value 'flycheck-disabled-checkers)))
   (setq flycheck-mode-line
         '(:eval (pcase flycheck-last-status-change
                   (`finished
@@ -246,7 +252,7 @@
                       (propertize (format "● %d " warnings) 'face `(:foreground ,custom/color-warning))
                       (propertize (format "● %d " infos) 'face `(:foreground ,custom/color-info)))))
                   (`running " Flyckeck:running")
-                  (`no-checker " Flycheck:off")
+                  (`no-checker "")
                   (`not-checked " Flycheck:?")
                   (`errored " Flycheck:err")
                   (`interrupted " Flycheck:stopped")))))
@@ -554,7 +560,6 @@ the leading space is prepended later by `vc-mode-line'."
 
 (use-package geiser-chez
   :ensure t
-  :defer t
   :custom
   (geiser-chez-binary "chez"))
 
@@ -568,3 +573,33 @@ the leading space is prepended later by `vc-mode-line'."
   :config
   (require 'forth-block-mode)
   (require 'forth-interaction-mode))
+
+;; --------------------------------------------------
+;; Clojure
+
+(use-package cider
+  :ensure t)
+
+;; --------------------------------------------------
+;; Web
+
+(use-package web-mode
+  :ensure t
+  :mode
+  (("\\.html\\'" . web-mode))
+  :custom
+  (web-mode-enable-auto-closing t)
+  (web-mode-auto-close-style 2)
+  (web-mode-enable-auto-opening t)
+  (web-mode-enable-auto-pairing t)
+  (web-mode-enable-auto-indentation t)
+  (web-mode-enable-auto-quoting t)
+  (web-mode-enable-current-element-highlight t)
+  :custom-face
+  (web-mode-current-element-highlight-face
+   ((t (:foreground ,custom/color-1 :background ,custom/color-5)))))
+
+(use-package emmet-mode
+  :ensure t
+  :hook
+  (web-mode))
