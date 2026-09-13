@@ -1,4 +1,4 @@
-personal_ws-1.1 en 122 
+personal_ws-1.1 en 123 
 alh
 alist
 autoload
@@ -17,6 +17,7 @@ cmi
 cmx
 concat
 config
+copywriting
 cpp
 crossorigin
 defaultbranch
