@@ -107,7 +107,6 @@
              (eldoc nil t)
              (auto-fill-function nil t))))
 
-
 ;; Code folding
 (use-package hideshow
   :ensure t
@@ -214,7 +213,8 @@
 ;; Show what functions are available on M-x
 (use-package vertico
   :ensure t
-  :config
+  :defer nil
+  :init
   (vertico-mode))
 
 ;; Display descriptions of functions
@@ -242,12 +242,14 @@
 ;; Enable code checking
 (use-package flycheck
   :ensure t
+  :defer nil
   :custom
   (flycheck-disabled-checkers '(emacs-lisp-checkdoc))
   (flycheck-mode-line-prefix " FC")
   (flycheck-emacs-lisp-load-path 'inherit)
-  :config
+  :init
   (global-flycheck-mode)
+  :config
   (set-face-attribute 'flycheck-warning nil
                     :foreground custom/color-yellow :weight 'normal)
   (global-flycheck-lsp-mode 1)
@@ -277,9 +279,11 @@
 (declare-function spell-fu-get-personal-dictionary "spell-fu")
 (use-package spell-fu
   :ensure t
-  :config
+  :defer nil
+  :init
   (spell-fu-global-mode)
-
+  :config
+  (add-hook 'spell-fu-mode-hook 'custom/spell-fu-add-personal-dict)
   ;; There are lots of technical words that we don't want to get flagged as
   ;; typos, so I'm using a local custom dictionary where I add all the words.
   (defun custom/spell-fu-add-personal-dict ()
@@ -289,9 +293,6 @@
      (spell-fu-get-personal-dictionary
       "en-personal"
       (expand-file-name "personal-dictionary.pws" user-emacs-directory))))
-
-  (add-hook 'spell-fu-mode-hook 'custom/spell-fu-add-personal-dict)
-
   :custom
   (spell-fu-ignore-modes '(dired-mode))
   (spell-fu-faces-exclude
@@ -305,9 +306,11 @@
 ;; Quickly insert bits of code
 (use-package yasnippet
   :ensure t
+  :defer nil
   :delight (yas-minor-mode)
-  :custom
+  :init
   (yas-global-mode 1)
+  :custom
   (yas-snippet-dirs '("~/.emacs.d/snippets")))
 
 ;; --------------------------------------------------
