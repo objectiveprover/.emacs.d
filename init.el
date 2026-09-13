@@ -579,3 +579,27 @@ the leading space is prepended later by `vc-mode-line'."
 
 (use-package cider
   :ensure t)
+
+;; --------------------------------------------------
+;; Web
+
+(use-package web-mode
+  :ensure t
+  :mode
+  (("\\.html\\'" . web-mode))
+  :custom
+  (web-mode-enable-auto-closing t)
+  (web-mode-auto-close-style 2)
+  (web-mode-enable-auto-opening t)
+  (web-mode-enable-auto-pairing t)
+  (web-mode-enable-auto-indentation t)
+  (web-mode-enable-auto-quoting t)
+  (web-mode-enable-current-element-highlight t)
+  :custom-face
+  (web-mode-current-element-highlight-face
+   ((t (:foreground ,custom/color-1 :background ,custom/color-5)))))
+
+(use-package emmet-mode
+  :ensure t
+  :hook
+  (web-mode))
