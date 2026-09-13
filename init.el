@@ -58,6 +58,8 @@
 	delight
         aggressive-indent
         paredit
+        orderless
+        vundo
         forth-mode ; Forth
         geiser-chez ; Chez
         cider ; Clojure
@@ -573,19 +575,3 @@ the leading space is prepended later by `vc-mode-line'."
 
 (use-package cider
   :ensure t)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(aggressive-indent cider delight delight expand-region flycheck forth-mode
-                       geiser-chez git-gutter iedit magit marginalia
-                       multiple-cursors orderless paredit paren-face spell-fu
-                       treemacs vertico visual-fill-column vundo yasnippet)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
