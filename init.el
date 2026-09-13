@@ -61,8 +61,6 @@
         forth-mode ; Forth
         geiser-chez ; Chez
         cider ; Clojure
-        web-mode
-        emmet-mode
         ))
 
 ;; Avoid loading stuff when starting Emacs so it starts faster
@@ -70,6 +68,7 @@
 
 ;; Keep parentheses
 (use-package paredit
+  :ensure t
   :hook ((emacs-lisp-mode . paredit-mode)
          (lisp-mode . paredit-mode)
          (scheme-mode . paredit-mode)))
@@ -85,6 +84,11 @@
   :ensure t
   :delight
   :config
+  ;; Only load Git indicators on code files, this way we avoid errors with other
+  ;; modes that try to take control of the screen's left padding.
+  ;; This wouldn't be needed on Emacs GUI but I use it on the terminal so there is
+  ;; no other option.
+  (add-hook 'prog-mode-hook 'git-gutter-mode)
   (setopt git-gutter:modified-sign "\uf440")
   (setopt git-gutter:added-sign "\uf067")
   (setopt git-gutter:deleted-sign "\uf068")
@@ -92,11 +96,7 @@
   (set-face-attribute 'git-gutter:added nil :foreground custom/color-4 :weight 'normal)
   (set-face-attribute 'git-gutter:deleted nil :foreground custom/color-4 :weight 'normal))
 
-;; Only load Git indicators on code files, this way we avoid errors with other
-;; modes that try to take control of the screen's left padding.
-;; This wouldn't be needed on Emacs GUI but I use it on the terminal so there is
-;; no other option.
-(add-hook 'prog-mode-hook 'git-gutter-mode)
+
 
 ;; Remove these indicators
 ;; We do it here because we're not adding them with 'use-package'
@@ -133,14 +133,14 @@
 (use-package paren-face
   :ensure t
   :hook (prog-mode . paren-face-mode)
-  :init
-  (global-paren-face-mode)
   :config
+  (global-paren-face-mode)
   (set-face-attribute 'parenthesis nil
                       :foreground custom/color-4
                       :weight 'normal)
   (setq paren-face-modes '(prog-mode))
   (setq paren-face-regexp "[][()}{]"))
+
 
 ;; Whitespace indicators
 (use-package whitespace
@@ -214,13 +214,13 @@
 ;; Show what functions are available on M-x
 (use-package vertico
   :ensure t
-  :init
+  :config
   (vertico-mode))
 
 ;; Display descriptions of functions
 (use-package marginalia
   :ensure t
-  :init
+  :config
   (marginalia-mode))
 
 ;; Persist history over Emacs restarts.
@@ -246,9 +246,10 @@
   (flycheck-disabled-checkers '(emacs-lisp-checkdoc))
   (flycheck-mode-line-prefix " FC")
   (flycheck-emacs-lisp-load-path 'inherit)
-  :init
-  (global-flycheck-mode)
   :config
+  (global-flycheck-mode)
+  (set-face-attribute 'flycheck-warning nil
+                    :foreground custom/color-yellow :weight 'normal)
   (global-flycheck-lsp-mode 1)
   (setq-default flycheck-disabled-checkers
                 (cons 'css-stylelint (default-value 'flycheck-disabled-checkers)))
@@ -306,9 +307,8 @@
   :ensure t
   :delight (yas-minor-mode)
   :custom
-  (yas-snippet-dirs '("~/.emacs.d/snippets"))
-  :init
-  (yas-global-mode 1))
+  (yas-global-mode 1)
+  (yas-snippet-dirs '("~/.emacs.d/snippets")))
 
 ;; --------------------------------------------------
 ;; General settings
@@ -431,7 +431,6 @@ the leading space is prepended later by `vc-mode-line'."
 ;; Hide menu bar
 (menu-bar-mode -1)
 (tool-bar-mode -1)
-(scroll-bar-mode -1)
 
 ;; Ask for Y or N instead of Yes or No
 (defalias 'yes-or-no-p 'y-or-n-p)
@@ -543,8 +542,6 @@ the leading space is prepended later by `vc-mode-line'."
                     :foreground custom/color-black)
 (set-face-attribute 'error nil
                     :underline `(:style wave :color ,custom/color-red) :weight 'normal)
-(set-face-attribute 'flycheck-warning nil
-                    :foreground custom/color-yellow :weight 'normal)
 (set-face-attribute 'error nil
                     :underline `(:style wave :color ,custom/color-red)
                     :foreground custom/color-red)
@@ -573,27 +570,19 @@ the leading space is prepended later by `vc-mode-line'."
 
 (use-package cider
   :ensure t)
-
-;; --------------------------------------------------
-;; Web
-
-(use-package web-mode
-  :ensure t
-  :mode
-  (("\\.html\\'" . web-mode))
-  :custom
-  (web-mode-enable-auto-closing t)
-  (web-mode-auto-close-style 2)
-  (web-mode-enable-auto-opening t)
-  (web-mode-enable-auto-pairing t)
-  (web-mode-enable-auto-indentation t)
-  (web-mode-enable-auto-quoting t)
-  (web-mode-enable-current-element-highlight t)
-  :custom-face
-  (web-mode-current-element-highlight-face
-   ((t (:foreground ,custom/color-1 :background ,custom/color-5)))))
-
-(use-package emmet-mode
-  :ensure t
-  :hook
-  (web-mode))
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   '(aggressive-indent cider delight delight expand-region flycheck forth-mode
+                       geiser-chez git-gutter iedit magit marginalia
+                       multiple-cursors orderless paredit paren-face spell-fu
+                       treemacs vertico visual-fill-column vundo yasnippet)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
