@@ -268,7 +268,11 @@
                       (propertize (format "● %d " errors)  'face `(:foreground ,custom/color-error))
                       (propertize (format "● %d " warnings) 'face `(:foreground ,custom/color-warning))
                       (propertize (format "● %d " infos) 'face `(:foreground ,custom/color-info)))))
-                  (`running " Flyckeck:running")
+                  (`running
+                   (concat
+                    (propertize "● 󰔟 " 'face `(:foreground ,custom/color-error))
+                    (propertize "● 󰔟 " 'face `(:foreground ,custom/color-warning))
+                    (propertize "● 󰔟 " 'face `(:foreground ,custom/color-info))))
                   (`no-checker nil)
                   (`not-checked nil)
                   (`errored " Flycheck:error")
