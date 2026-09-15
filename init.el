@@ -1,10 +1,20 @@
-;; -*- lexical-binding: t; -*-
+;;; -*- lexical-binding: t; -*-
 
 (require 'package)
 
+;; Make more intuitive knowing which packages are coming from an archive.
+;; use-package is for archives and use-feature is for built-in ones.
+;; Remember to use the library name, not the package name.
+;; The locate-library function can be useful to know the name to use.
+(defmacro use-feature (name &rest args)
+  "Alias for use-package :ensure nil"
+  (declare (indent defun))
+  `(use-package ,name :ensure nil ,@args))
+
 ;; Highlight certain ubiquitous elisp functions as keywords to make
-;; code nicer to read.
-(let ((keywords '("add-to-list"
+;; code nicer to read. Including some defined by me that are used globally.
+(let ((keywords '("use-feature"
+		  "add-to-list"
                   "set-face-attribute"
                   "set-face-background"
                   "set-face-foreground"
@@ -16,8 +26,8 @@
                   "concat"
                   "list")))
   (font-lock-add-keywords 'emacs-lisp-mode
-    `((,(concat "\\_<" (regexp-opt keywords t) "\\_>")
-       . font-lock-keyword-face))))
+                          `((,(concat "\\_<" (regexp-opt keywords t) "\\_>")
+                             . font-lock-keyword-face))))
 
 ;; My custom code
 (add-to-list 'load-path (expand-file-name "custom" user-emacs-directory))
@@ -51,7 +61,6 @@
         visual-fill-column
         paren-face
         treemacs
-        delight
         magit
         git-gutter
         spell-fu
@@ -63,14 +72,17 @@
         forth-mode ; Forth
         geiser-chez ; Chez
         cider ; Clojure
+        flycheck-clj-kondo ; Clojure linter
         ))
 
-;; Avoid loading stuff when starting Emacs so it starts faster
+;; Avoid automatically loading packages when starting Emacs so it starts faster
 (setopt use-package-always-defer t)
+;; Automatically fetch packages if they are not present.
+;; Important: Because of this, an explicit `:ensure nil` is necessary sometimes
+(setopt use-package-always-ensure t)
 
 ;; Keep parentheses
 (use-package paredit
-  :ensure t
   :hook ((emacs-lisp-mode . paredit-mode)
          (lisp-mode . paredit-mode)
          (scheme-mode . paredit-mode)))
@@ -83,7 +95,6 @@
 ;; Git indicators
 ;; Note: this needs a patched "nerd fonts" for the icons, I use Maple Mono
 (use-package git-gutter
-  :ensure t
   :delight
   :config
   ;; Only load Git indicators on code files, this way we avoid errors with other
@@ -98,20 +109,16 @@
   (set-face-attribute 'git-gutter:added nil :foreground custom/color-4 :weight 'normal)
   (set-face-attribute 'git-gutter:deleted nil :foreground custom/color-4 :weight 'normal))
 
-
-
 ;; Remove these indicators
 ;; We do it here because we're not adding them with 'use-package'
 (use-package delight
-  :ensure t
   :config
   (delight `(
              (eldoc nil t)
              (auto-fill-function nil t))))
 
 ;; Code folding
-(use-package hideshow
-  :ensure t
+(use-feature hideshow
   :delight (hs-minor-mode)
   :hook
   (prog-mode . hs-minor-mode)
@@ -121,7 +128,6 @@
 
 ;; File tree sidebar
 (use-package treemacs
-  :ensure t
   :config
   (keymap-global-set (getkey "treemacs") 'treemacs)
   (set-face-attribute 'treemacs-git-modified-face nil
@@ -132,7 +138,6 @@
 
 ;; Add parentheses face everywhere
 (use-package paren-face
-  :ensure t
   :hook (prog-mode . paren-face-mode)
   :config
   (global-paren-face-mode)
@@ -142,9 +147,8 @@
   (setq paren-face-modes '(prog-mode))
   (setq paren-face-regexp "[][()}{]"))
 
-
 ;; Whitespace indicators
-(use-package whitespace
+(use-feature whitespace
   :delight whitespace-mode
   :init
   (setopt whitespace-style '(face tabs spaces space-before-tab newline indentation empty
@@ -152,40 +156,41 @@
   :custom-face
   (whitespace-space ((t (:background nil :foreground ,custom/color-white)))))
 
+
+;; Wrap lines at fill-column
+(setopt fill-column 80)
+(use-package visual-fill-column)
+
 ;; For writing prose, also soft-breaks lines to make them readable
 ;; instead of them spanning the whole screen.
-(use-package markdown-mode
-  :custom
-  (fill-column 80)
+(use-feature markdown-ts-mode
+  :mode ("\\.md\\'" . markdown-ts-mode)
   :hook
-  (markdown-mode . visual-fill-column-mode)
-  (markdown-mode . visual-line-mode))
+  (markdown-ts-mode . visual-fill-column-mode)
+  (markdown-ts-mode . visual-line-mode))
 
-(use-package org-mode
+(use-feature org
   :hook
   (org-mode . visual-fill-column-mode)
   (org-mode . visual-line-mode))
 
 ;; Select and edit multiple things at the same time
 (use-package multiple-cursors
-  :ensure t
   :config
   (keymap-global-set (getkey "mc/mark-next-like-this") 'mc/mark-next-like-this)
   (keymap-global-set (getkey "mc/mark-previous-like-this") 'mc/mark-previous-like-this)
   (keymap-global-set (getkey "mc/mark-all-like-this") 'mc/mark-all-like-this))
 
 ;; Version Control
-(use-package magit
-  :ensure t)
+(use-package magit)
 
 ;; Increase selection in a semantic way
 (use-package expand-region
-  :ensure t
   :config
   (keymap-global-set (getkey "er/expand-region") 'er/expand-region))
 
 ;; File manager
-(use-package dired
+(use-feature dired
   :custom
   (dired-listing-switches "-alh")
   (dired-dwim-target t)
@@ -195,7 +200,6 @@
 ;; Display the undo tree
 (use-package vundo
   :defer nil
-  :ensure t
   :config
   (keymap-global-set (getkey "vundo") 'vundo)
   :custom
@@ -207,35 +211,30 @@
 ;; C-x n w -> widen (restore full buffer view)
 (put 'narrow-to-region 'disabled nil) ; Enable narrow-to-region
 (use-package iedit
-  :ensure t
   :config
   (keymap-global-set (getkey "iedit-mode") 'iedit-mode)
   (set-face-background 'iedit-occurrence custom/color-white))
 
 ;; Show what functions are available on M-x
 (use-package vertico
-  :ensure t
   :defer nil
   :init
   (vertico-mode))
 
 ;; Display descriptions of functions
 (use-package marginalia
-  :ensure t
   :config
   (marginalia-mode))
 
 ;; Persist history over Emacs restarts.
 ;; - Vertico sorts by history position.
-(use-package savehist
-  :ensure t
+(use-feature savehist
   :init
   (savehist-mode))
 
 ;; Enable finding functions, variables, etc.
 ;; Without being precise in the spelling.
 (use-package orderless
-  :ensure t
   :custom
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles partial-completion))))
@@ -243,20 +242,15 @@
 
 ;; Enable code checking
 (use-package flycheck
-  :ensure t
   :defer nil
   :custom
   (flycheck-disabled-checkers '(emacs-lisp-checkdoc))
-  (flycheck-mode-line-prefix " FC")
   (flycheck-emacs-lisp-load-path 'inherit)
   :init
   (global-flycheck-mode)
   :config
   (set-face-attribute 'flycheck-warning nil
                     :foreground custom/color-yellow :weight 'normal)
-  (global-flycheck-lsp-mode 1)
-  (setq-default flycheck-disabled-checkers
-                (cons 'css-stylelint (default-value 'flycheck-disabled-checkers)))
   (setq flycheck-mode-line
         '(:eval (pcase flycheck-last-status-change
                   (`finished
@@ -284,7 +278,6 @@
 (declare-function spell-fu-get-ispell-dictionary "spell-fu")
 (declare-function spell-fu-get-personal-dictionary "spell-fu")
 (use-package spell-fu
-  :ensure t
   :defer nil
   :init
   (spell-fu-global-mode)
@@ -311,7 +304,6 @@
 
 ;; Quickly insert bits of code
 (use-package yasnippet
-  :ensure t
   :defer nil
   :delight (yas-minor-mode)
   :init
@@ -343,7 +335,7 @@
 (add-hook 'emacs-lisp-mode-hook
           (lambda ()
             (setq mode-name
-                  '("Elisp" (lexical-binding " \uf0ec Lexical" "Dynamic")))))
+                  '("Elisp" (lexical-binding " \uf0ec Lexical" " \uf0ec Dynamic")))))
 
 (defconst custom/vc-git-icon "\ue0a0"
   "Branch glyph (U+E0A0, Powerline/Nerd Font set).")
@@ -401,8 +393,7 @@ the leading space is prepended later by `vc-mode-line'."
   (setopt compilation-scroll-output t))
 
 ;; Show what keybindings are available after a prefix like C-x or C-c.
-(use-package which-key
-  :ensure t
+(use-feature which-key
   :delight
   :config
   (setq which-key-separator " → "
@@ -452,7 +443,7 @@ the leading space is prepended later by `vc-mode-line'."
 (setq column-number-mode t)
 
 ;; Enable auto-completion for code and text
-(use-package completion-preview
+(use-feature completion-preview
   :delight
   :config
   (setopt completion-preview-idle-delay 1)
@@ -559,7 +550,6 @@ the leading space is prepended later by `vc-mode-line'."
 ;; Scheme (Chez Scheme)
 
 (use-package geiser-chez
-  :ensure t
   :custom
   (geiser-chez-binary "chez"))
 
@@ -567,7 +557,6 @@ the leading space is prepended later by `vc-mode-line'."
 ;; Forth (GForth)
 
 (use-package forth-mode
-  :ensure t
   :mode ("\\.fs\\'" . forth-mode)
   :commands (forth-mode run-forth)
   :config
@@ -577,29 +566,7 @@ the leading space is prepended later by `vc-mode-line'."
 ;; --------------------------------------------------
 ;; Clojure
 
+(use-package flycheck-clj-kondo)
 (use-package cider
-  :ensure t)
-
-;; --------------------------------------------------
-;; Web
-
-(use-package web-mode
-  :ensure t
-  :mode
-  (("\\.html\\'" . web-mode))
-  :custom
-  (web-mode-enable-auto-closing t)
-  (web-mode-auto-close-style 2)
-  (web-mode-enable-auto-opening t)
-  (web-mode-enable-auto-pairing t)
-  (web-mode-enable-auto-indentation t)
-  (web-mode-enable-auto-quoting t)
-  (web-mode-enable-current-element-highlight t)
-  :custom-face
-  (web-mode-current-element-highlight-face
-   ((t (:foreground ,custom/color-1 :background ,custom/color-5)))))
-
-(use-package emmet-mode
-  :ensure t
-  :hook
-  (web-mode))
+  :config
+  (require 'flycheck-clj-kondo))
