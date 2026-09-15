@@ -1,5 +1,8 @@
 ;;; -*- lexical-binding: t; -*-
 
+;; Make sure we're not loading stale files
+(setopt load-prefer-newer t)
+
 (require 'package)
 
 ;; Make more intuitive knowing which packages are coming from an archive.
