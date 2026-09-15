@@ -19,3 +19,4 @@ elpa
 *~
 eln-cache
 *.elc
+*-autoloads.el
