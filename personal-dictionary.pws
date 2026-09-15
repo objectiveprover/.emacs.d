@@ -1,4 +1,4 @@
-personal_ws-1.1 en 127 
+personal_ws-1.1 en 128 
 alh
 alist
 autoload
@@ -115,6 +115,7 @@ treemacs
 treesit
 tsx
 turbopack
+untracked
 usr
 utf
 utop
