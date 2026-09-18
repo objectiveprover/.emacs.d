@@ -78,10 +78,13 @@
         emmet-mode
         ))
 
-;; Prevent clicks in the terminal from moving the cursor
+;; Prevent clicks in the terminal and GUI from moving the cursor
 (use-feature xt-mouse
   :config
   (xterm-mouse-mode -1))
+
+;; Don't blink the cursor
+(setopt blink-cursor-mode nil)
 
 ;; Avoid automatically loading packages when starting Emacs so it starts faster
 (setopt use-package-always-defer t)
@@ -584,5 +587,7 @@ the leading space is prepended later by `vc-mode-line'."
 ;; --------------------------------------------------
 ;; New options
 
-(setopt line-spacing `(0.15 . 0.15))
+;; My god, finally there is a line-spacing option, the top and bottom spacing
+;; needs to be different for a true center though.
+(setopt line-spacing `(0.15 . 0.11))
 (setopt mode-line-collapse-minor-modes t)
