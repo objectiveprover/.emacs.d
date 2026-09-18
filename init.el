@@ -67,7 +67,6 @@
         magit
         git-gutter
         spell-fu
-	delight
         aggressive-indent
         paredit
         orderless
@@ -104,7 +103,6 @@
 ;; Git indicators
 ;; Note: this needs a patched "nerd fonts" for the icons, I use Maple Mono
 (use-package git-gutter
-  :delight
   :config
   ;; Only load Git indicators on code files, this way we avoid errors with other
   ;; modes that try to take control of the screen's left padding.
@@ -118,17 +116,8 @@
   (set-face-attribute 'git-gutter:added nil :foreground custom/color-4 :weight 'normal)
   (set-face-attribute 'git-gutter:deleted nil :foreground custom/color-4 :weight 'normal))
 
-;; Remove these indicators
-;; We do it here because we're not adding them with 'use-package'
-(use-package delight
-  :config
-  (delight `(
-             (eldoc nil t)
-             (auto-fill-function nil t))))
-
 ;; Code folding
 (use-feature hideshow
-  :delight (hs-minor-mode)
   :hook
   (prog-mode . hs-minor-mode)
   :config
@@ -158,7 +147,6 @@
 
 ;; Whitespace indicators
 (use-feature whitespace
-  :delight whitespace-mode
   :init
   (setopt whitespace-style '(face tabs spaces space-before-tab newline indentation empty
                                   space-after-tab space-mark tab-mark newline-mark missing-newline-at-eof))
@@ -314,7 +302,6 @@
 ;; Quickly insert bits of code
 (use-package yasnippet
   :defer nil
-  :delight (yas-minor-mode)
   :init
   (yas-global-mode 1)
   :custom
@@ -403,7 +390,6 @@ the leading space is prepended later by `vc-mode-line'."
 
 ;; Show what keybindings are available after a prefix like C-x or C-c.
 (use-feature which-key
-  :delight
   :config
   (setq which-key-separator " → "
         which-key-max-display-columns 1
@@ -453,7 +439,6 @@ the leading space is prepended later by `vc-mode-line'."
 
 ;; Enable auto-completion for code and text
 (use-feature completion-preview
-  :delight
   :config
   (setopt completion-preview-idle-delay 1)
   :init
@@ -484,7 +469,9 @@ the leading space is prepended later by `vc-mode-line'."
                     :box '(:style flat-button :line-width 4))
 (set-face-attribute 'default nil
                     :foreground custom/color-black
-                    :background custom/color-background)
+                    :background custom/color-background
+                    :height 135
+                    :family "JetBrainsMono Nerd Font")
 
 (set-face-attribute 'show-paren-match nil
                     :foreground custom/color-1
@@ -593,3 +580,9 @@ the leading space is prepended later by `vc-mode-line'."
 
 (use-package emmet-mode
   :hook (mhtml-ts-mode . emmet-mode))
+
+;; --------------------------------------------------
+;; New options
+
+(setopt line-spacing `(0.15 . 0.15))
+(setopt mode-line-collapse-minor-modes t)
