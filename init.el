@@ -76,7 +76,13 @@
         geiser-chez ; Chez
         cider ; Clojure
         flycheck-clj-kondo ; Clojure linter
+        emmet-mode
         ))
+
+;; Prevent clicks in the terminal from moving the cursor
+(use-feature xt-mouse
+  :config
+  (xterm-mouse-mode -1))
 
 ;; Avoid automatically loading packages when starting Emacs so it starts faster
 (setopt use-package-always-defer t)
@@ -463,6 +469,7 @@ the leading space is prepended later by `vc-mode-line'."
 
 ;; Global UI
 (setopt fringe-styles 10)
+
 (set-face-attribute 'fringe nil
                     :background custom/color-background)
 (set-face-attribute 'button nil
@@ -573,3 +580,16 @@ the leading space is prepended later by `vc-mode-line'."
 (use-package cider
   :config
   (require 'flycheck-clj-kondo))
+
+;; --------------------------------------------------
+;; Web
+
+(setopt treesit-enabled-modes '(mhtml-ts-mode css-ts-mode js-ts-mode)
+        treesit-auto-install-grammar 'ask)
+
+(use-feature mhtml-ts-mode
+  :ensure nil
+  :custom ((mhtml-ts-mode-css-fontify-colors nil)))
+
+(use-package emmet-mode
+  :hook (mhtml-ts-mode . emmet-mode))

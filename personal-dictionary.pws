@@ -1,4 +1,4 @@
-personal_ws-1.1 en 128 
+personal_ws-1.1 en 136 
 alh
 alist
 autoload
@@ -54,11 +54,13 @@ ghostty
 gpg
 gpgsign
 hackiness
+hernández
 homebrew
 href
 https
 iedit
 imenu
+img
 init
 jaiheravi
 jetbrains
@@ -76,6 +78,7 @@ nav
 neuralink
 newtype
 npm
+nrepl
 ocamlinit
 og
 opam
@@ -87,6 +90,7 @@ pbcopy
 pbpaste
 pdfs
 petri
+photonics
 png
 powerline
 preload
@@ -111,10 +115,12 @@ stylesheet
 stylesheets
 svg
 terminfo
+toolset
 treemacs
 treesit
 tsx
 turbopack
+uis
 untracked
 usr
 utf
@@ -122,8 +128,10 @@ utop
 vertico
 viewport
 vundo
+vxworks
 webc
 websocket
+websockets
 whitespace
 xcode
 zsh
