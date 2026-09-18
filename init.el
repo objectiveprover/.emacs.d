@@ -1,4 +1,7 @@
-;;; -*- lexical-binding: t; -*-
+; -*- lexical-binding: t; -*-
+
+;; Lexical-binding by default
+(set-default-toplevel-value 'lexical-binding t)
 
 ;; Make sure we're not loading stale files
 (setopt load-prefer-newer t)
@@ -176,7 +179,15 @@
 (use-feature org
   :hook
   (org-mode . visual-fill-column-mode)
-  (org-mode . visual-line-mode))
+  (org-mode . visual-line-mode)
+  :config
+  (dolist (spec '((org-level-1 . 1.35)
+                  (org-level-2 . 1.2)
+                  (org-level-3 . 1.1)
+                  (org-level-4 . 1.05)))
+    (set-face-attribute (car spec) nil
+                        :height (cdr spec)
+                        :weight 'semibold)))
 
 ;; Select and edit multiple things at the same time
 (use-package multiple-cursors
