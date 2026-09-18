@@ -16,21 +16,25 @@
 
 ;; Highlight certain ubiquitous elisp functions as keywords to make
 ;; code nicer to read. Including some defined by me that are used globally.
-(let ((keywords '("use-feature"
-		  "add-to-list"
-                  "set-face-attribute"
-                  "set-face-background"
-                  "set-face-foreground"
-                  "custom-set-variables"
-                  "keymap-global-set"
-                  "add-hook"
-                  "car"
-                  "cdr"
-                  "concat"
-                  "list")))
-  (font-lock-add-keywords 'emacs-lisp-mode
-                          `((,(concat "\\_<" (regexp-opt keywords t) "\\_>")
-                             . font-lock-keyword-face))))
+;; (let ((keywords '("use-feature"
+;; 		  "add-to-list"
+;;                   "set-face-attribute"
+;;                   "set-face-background"
+;;                   "set-face-foreground"
+;;                   "custom-set-variables"
+;;                   "keymap-global-set"
+;;                   "add-hook"
+;;                   "car"
+;;                   "cdr"
+;;                   "concat"
+;;                   "list")))
+;;   (font-lock-add-keywords 'emacs-lisp-mode
+;;                           `((,(concat "\\_<" (regexp-opt keywords t) "\\_>")
+;;                              . font-lock-keyword-face))))
+
+;; I guess this should do something similar to the above
+(setopt elisp-fontify-semantically t)
+(setopt elisp-variable-at-point t)
 
 ;; My custom code
 (add-to-list 'load-path (expand-file-name "custom" user-emacs-directory))
@@ -83,8 +87,8 @@
   :config
   (xterm-mouse-mode -1))
 
-;; Don't blink the cursor
-(setopt blink-cursor-mode nil)
+;; Remove the scroll bar
+(setopt scroll-bar-mode nil)
 
 ;; Avoid automatically loading packages when starting Emacs so it starts faster
 (setopt use-package-always-defer t)
@@ -101,7 +105,7 @@
 ;; Make the cursor to stop blinking
 ;; Note: This depends on the terminal emulator about what "visible" means
 (setopt visible-cursor nil)
-(blink-cursor-mode nil)
+(setopt blink-cursor-mode nil) ; GUI
 
 ;; Git indicators
 ;; Note: this needs a patched "nerd fonts" for the icons, I use Maple Mono
@@ -545,6 +549,8 @@ the leading space is prepended later by `vc-mode-line'."
 (set-face-attribute 'error nil
                     :underline `(:style wave :color ,custom/color-red)
                     :foreground custom/color-red)
+(set-face-attribute 'elisp-variable-at-point nil
+                    :background custom/color-5)
 
 ;; --------------------------------------------------
 ;; Scheme (Chez Scheme)
@@ -590,4 +596,6 @@ the leading space is prepended later by `vc-mode-line'."
 ;; My god, finally there is a line-spacing option, the top and bottom spacing
 ;; needs to be different for a true center though.
 (setopt line-spacing `(0.15 . 0.11))
+
+;; Remove minor mode indicators in the mode line
 (setopt mode-line-collapse-minor-modes t)
