@@ -596,7 +596,10 @@ the leading space is prepended later by `vc-mode-line'."
 
 (use-feature mhtml-ts-mode
   :ensure nil
-  :custom ((mhtml-ts-mode-css-fontify-colors nil)))
+  :custom ((mhtml-ts-mode-css-fontify-colors nil))
+  :hook
+  (mhtml-ts-mode . visual-fill-column-mode)
+  (mhtml-ts-mode . visual-line-mode))
 
 (use-package emmet-mode
   :hook (mhtml-ts-mode . emmet-mode))
