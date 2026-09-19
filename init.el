@@ -165,7 +165,7 @@
 
 
 ;; Wrap lines at fill-column
-(setopt fill-column 80)
+(setopt fill-column 100)
 (use-package visual-fill-column)
 
 ;; For writing prose, also soft-breaks lines to make them readable
@@ -492,7 +492,7 @@ the leading space is prepended later by `vc-mode-line'."
                     :family "JetBrainsMono Nerd Font")
 
 (set-face-attribute 'show-paren-match nil
-                    :foreground custom/color-1
+                    :foreground custom/color-red
                     :background custom/color-background
                     :weight 'bold)
 
@@ -518,7 +518,8 @@ the leading space is prepended later by `vc-mode-line'."
 
 ;; Syntax highlighting
 (set-face-attribute 'font-lock-function-name-face nil
-                    :foreground custom/color-black)
+                    :foreground custom/color-black
+                    :weight 'bold)
 (set-face-attribute 'font-lock-function-call-face nil
                     :foreground custom/color-black)
 (set-face-attribute 'font-lock-variable-name-face nil
@@ -594,15 +595,16 @@ the leading space is prepended later by `vc-mode-line'."
 (setopt treesit-enabled-modes '(mhtml-ts-mode css-ts-mode js-ts-mode)
         treesit-auto-install-grammar 'ask)
 
-(use-feature mhtml-ts-mode
-  :ensure nil
-  :custom ((mhtml-ts-mode-css-fontify-colors nil))
-  :hook
-  (mhtml-ts-mode . visual-fill-column-mode)
-  (mhtml-ts-mode . visual-line-mode))
+;; (use-package emmet-mode
+;;   :hook (mhtml-ts-mode . emmet-mode))
 
-(use-package emmet-mode
-  :hook (mhtml-ts-mode . emmet-mode))
+(use-feature mhtml-ts-mode
+  :custom
+  (mhtml-ts-mode-css-fontify-colors nil)
+  :hook
+  (mhtml-ts-mode . (lambda ()
+                     (visual-fill-column-mode t)
+                     (visual-line-mode t))))
 
 ;; --------------------------------------------------
 ;; New options
