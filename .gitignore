@@ -21,3 +21,4 @@ eln-cache
 *.elc
 *-autoloads.el
 .yas-compiled-snippets.*
+flycheck_init.el
