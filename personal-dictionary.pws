@@ -1,18 +1,23 @@
-personal_ws-1.1 en 137 
+personal_ws-1.1 en 156 
 alh
 alist
+astro
+atomicity
 autoload
 autosave
 autosaves
+avahi
 axioma
 backend
 bg
+caddy
 calc
 canonicalurl
 cdr
 charset
 checkdoc
 chez
+chmod
 cmi
 cmx
 concat
@@ -30,6 +35,7 @@ doctype
 dom
 dropdown
 editorconfig
+eglot
 el
 eleventy
 elisp
@@ -46,6 +52,7 @@ flexoki
 flycheck
 flyckeck
 flyspell
+fontproviders
 fs
 fu
 gforth
@@ -56,6 +63,7 @@ gpgsign
 hackiness
 hernández
 homebrew
+homelab
 href
 https
 iedit
@@ -65,14 +73,20 @@ init
 jaiheravi
 jetbrains
 jetbrainsmono
+jpg
 json
 keymap
+keyset
 lf
 linter
 localhost
+localsend
+ls
 lsp
 magit
+mailto
 makefile
+mdns
 melpa
 modeline
 nav
@@ -80,6 +94,7 @@ neuralink
 newtype
 npm
 nrepl
+objectiveprover
 ocamlinit
 og
 opam
@@ -93,6 +108,7 @@ pdfs
 petri
 photonics
 png
+postgres
 powerline
 preload
 prepended
@@ -114,6 +130,7 @@ struct
 structs
 stylesheet
 stylesheets
+sudo
 svg
 terminfo
 toolset
@@ -121,6 +138,7 @@ treemacs
 treesit
 tsx
 turbopack
+ufw
 uis
 untracked
 usr
@@ -131,6 +149,7 @@ viewport
 vundo
 vxworks
 webc
+webdevelopment
 websocket
 websockets
 whitespace

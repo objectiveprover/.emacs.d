@@ -1,10 +1,13 @@
-; -*- lexical-binding: t; -*-
+;;; init.el --- The Minimalist Emacs  -*- lexical-binding: t; -*-
+
+;;; Commentary:
+;; This part of the file is just to avoid Emacs from complaining
+;; by the lack of documentation in this file.
+
+;;; Code:
 
 ;; Lexical-binding by default
 (set-default-toplevel-value 'lexical-binding t)
-
-;; Make sure we're not loading stale files
-(setopt load-prefer-newer t)
 
 (require 'package)
 
@@ -13,27 +16,9 @@
 ;; Remember to use the library name, not the package name.
 ;; The locate-library function can be useful to know the name to use.
 (defmacro use-feature (name &rest args)
-  "Alias for use-package :ensure nil"
+  "Alias for `use-package NAME :ensure nil ... ARGS'."
   (declare (indent defun))
   `(use-package ,name :ensure nil ,@args))
-
-;; Highlight certain ubiquitous elisp functions as keywords to make
-;; code nicer to read. Including some defined by me that are used globally.
-;; (let ((keywords '("use-feature"
-;; 		  "add-to-list"
-;;                   "set-face-attribute"
-;;                   "set-face-background"
-;;                   "set-face-foreground"
-;;                   "custom-set-variables"
-;;                   "keymap-global-set"
-;;                   "add-hook"
-;;                   "car"
-;;                   "cdr"
-;;                   "concat"
-;;                   "list")))
-;;   (font-lock-add-keywords 'emacs-lisp-mode
-;;                           `((,(concat "\\_<" (regexp-opt keywords t) "\\_>")
-;;                              . font-lock-keyword-face))))
 
 ;; I guess this should do something similar to the above
 (setopt elisp-fontify-semantically t)
@@ -83,7 +68,14 @@
         cider ; Clojure
         flycheck-clj-kondo ; Clojure linter
         emmet-mode
+        astro-ts-mode
+        rainbow-mode
         ))
+
+(use-feature project
+  :custom
+  ;; `touch .project` marks a root
+  (project-vc-extra-root-markers '(".project")))
 
 ;; Prevent clicks in the terminal and GUI from moving the cursor
 (use-feature xt-mouse
@@ -136,13 +128,17 @@
 
 ;; File tree sidebar
 (use-package treemacs
+  :custom
+  (treemacs-no-png-images t)
   :config
   (keymap-global-set (getkey "treemacs") 'treemacs)
   (set-face-attribute 'treemacs-git-modified-face nil
                       :foreground custom/color-black
                       :slant 'normal)
   (set-face-attribute 'treemacs-git-added-face nil
-                      :foreground custom/color-black))
+                      :foreground custom/color-black)
+  (set-face-attribute 'treemacs-root-face nil
+                      :height 1.0))
 
 ;; Add parentheses face everywhere
 (use-package paren-face
@@ -168,13 +164,10 @@
 (setopt fill-column 100)
 (use-package visual-fill-column)
 
-;; For writing prose, also soft-breaks lines to make them readable
-;; instead of them spanning the whole screen.
 (use-feature markdown-ts-mode
-  :mode ("\\.md\\'" . markdown-ts-mode)
+  :mode ("\\.md\\'" "\\.markdown\\'")
   :hook
-  (markdown-ts-mode . visual-fill-column-mode)
-  (markdown-ts-mode . visual-line-mode))
+  (markdown-ts-mode . visual-fill-column-mode))
 
 (use-feature org
   :hook
@@ -201,6 +194,7 @@
 
 ;; Increase selection in a semantic way
 (use-package expand-region
+  :defer nil
   :config
   (keymap-global-set (getkey "er/expand-region") 'er/expand-region))
 
@@ -259,13 +253,14 @@
 (use-package flycheck
   :defer nil
   :custom
-  (flycheck-disabled-checkers '(emacs-lisp-checkdoc))
   (flycheck-emacs-lisp-load-path 'inherit)
+  (flycheck-global-modes '(not lisp-interaction-mode markdown-ts-mode))
   :init
   (global-flycheck-mode)
   :config
+  (global-flycheck-eglot-mode 1)
   (set-face-attribute 'flycheck-warning nil
-                    :foreground custom/color-yellow :weight 'normal)
+                      :foreground custom/color-yellow :weight 'normal)
   (setq flycheck-mode-line
         '(:eval (pcase flycheck-last-status-change
                   (`finished
@@ -297,6 +292,30 @@
   :init
   (spell-fu-global-mode)
   :config
+  (setq-default spell-fu-ignore-modes '(dired-mode))
+  (setq-default spell-fu-faces-exclude
+                '(font-lock-keyword-face
+                  font-lock-function-name-face
+                  font-lock-variable-name-face
+                  font-lock-variable-use-face
+                  font-lock-builtin-face
+                  font-lock-constant-face
+                  font-lock-type-face
+                  ;; Eglot semantic tokens: types (comment and string stay checked)
+                  eglot-semantic-namespace eglot-semantic-type eglot-semantic-class
+                  eglot-semantic-enum eglot-semantic-interface eglot-semantic-struct
+                  eglot-semantic-typeParameter eglot-semantic-parameter
+                  eglot-semantic-variable eglot-semantic-property
+                  eglot-semantic-enumMember eglot-semantic-event
+                  eglot-semantic-function eglot-semantic-method eglot-semantic-macro
+                  eglot-semantic-keyword eglot-semantic-modifier eglot-semantic-number
+                  eglot-semantic-regexp eglot-semantic-operator eglot-semantic-decorator
+                  ;; Eglot semantic tokens: modifiers (documentation stays checked)
+                  eglot-semantic-declaration eglot-semantic-definition
+                  eglot-semantic-readonly eglot-semantic-static
+                  eglot-semantic-deprecated eglot-semantic-abstract
+                  eglot-semantic-async eglot-semantic-modification
+                  eglot-semantic-defaultLibrary))
   (add-hook 'spell-fu-mode-hook 'custom/spell-fu-add-personal-dict)
   ;; There are lots of technical words that we don't want to get flagged as
   ;; typos, so I'm using a local custom dictionary where I add all the words.
@@ -306,16 +325,7 @@
     (spell-fu-dictionary-add
      (spell-fu-get-personal-dictionary
       "en-personal"
-      (expand-file-name "personal-dictionary.pws" user-emacs-directory))))
-  :custom
-  (spell-fu-ignore-modes '(dired-mode))
-  (spell-fu-faces-exclude
-   '(font-lock-keyword-face
-     font-lock-function-name-face
-     font-lock-variable-name-face
-     font-lock-builtin-face
-     font-lock-constant-face
-     font-lock-type-face)))
+      (expand-file-name "personal-dictionary.pws" user-emacs-directory)))))
 
 ;; Quickly insert bits of code
 (use-package yasnippet
@@ -376,13 +386,30 @@ the leading space is prepended later by `vc-mode-line'."
                 (t custom/color-white)))) ; saved
     (propertize " ●" 'face `(:foreground ,color))))
 
+(defvar-local custom/display-path-cache nil
+  "Cons of (TRUENAME . DISPLAY-STRING) for the mode line.")
+
+(defun custom/buffer-display-path ()
+  "Project name and project-relative path or the full path or the buffer name."
+  (if-let* ((file buffer-file-truename))
+      (if (equal (car custom/display-path-cache) file)
+          (cdr custom/display-path-cache)
+        (let* ((proj (project-current))
+               (str (if proj
+                        (concat (project-name proj) "/"
+                                (file-relative-name file (project-root proj)))
+                      file)))
+          (setq custom/display-path-cache (cons file str))
+          str))
+    (buffer-name)))
+
 ;; Custom mode line
 (setq-default mode-line-format
               '("%1."
                 (buffer-file-truename
                  ((:eval (custom/file-status-indicator)) "%2."))
-                (:eval (propertize (or buffer-file-truename (buffer-name))
-                                       'face '(:weight bold)))
+                (:eval (propertize (custom/buffer-display-path)
+                   'face '(:weight bold)))
                 "%4.\uebd0%2."
                 (:eval (format-mode-line "%l"))
                 " of "
@@ -466,6 +493,14 @@ the leading space is prepended later by `vc-mode-line'."
 (setopt electric-pair-preserve-balance t)
 (setopt electric-pair-delete-adjacent-pairs t)
 (electric-pair-mode)
+
+;; Hard wrap comments in programming modes
+(setopt comment-auto-fill-only-comments t)
+(add-hook 'prog-mode-hook #'auto-fill-mode)
+
+(use-package rainbow-mode
+  :delight
+  :hook ((css-ts-mode emacs-lisp-mode) . rainbow-mode))
 
 ;; --------------------------------------------------
 ;; Visual customization
@@ -595,16 +630,41 @@ the leading space is prepended later by `vc-mode-line'."
 (setopt treesit-enabled-modes '(mhtml-ts-mode css-ts-mode js-ts-mode)
         treesit-auto-install-grammar 'ask)
 
-;; (use-package emmet-mode
-;;   :hook (mhtml-ts-mode . emmet-mode))
+(use-package emmet-mode
+  :hook ((mhtml-ts-mode astro-ts-mode) . emmet-mode))
 
 (use-feature mhtml-ts-mode
   :custom
-  (mhtml-ts-mode-css-fontify-colors nil)
+  (mhtml-ts-mode-css-fontify-colors nil))
+
+(use-feature css-ts-mode
+  :custom
+  (css-fontify-colors nil))
+
+(use-package astro-ts-mode
+  :mode "\\.astro\\'"
+  :init
+  (add-to-list 'treesit-language-source-alist
+               '(astro "https://github.com/virchau13/tree-sitter-astro"))
   :hook
-  (mhtml-ts-mode . (lambda ()
-                     (visual-fill-column-mode t)
-                     (visual-line-mode t))))
+  (astro-ts-mode . eglot-ensure)
+  :config
+  (require 'typescript-ts-mode)
+  (dolist (lang '(astro css typescript tsx))
+    (unless (treesit-language-available-p lang)
+      (treesit-install-language-grammar lang))))
+
+(use-feature eglot
+  :config
+  (add-to-list 'eglot-server-programs
+               '(astro-ts-mode . ("astro-ls" "--stdio"
+                                  :initializationOptions
+                                  (:typescript (:tsdk "./node_modules/typescript/lib"))))))
+
+(use-package flycheck-eglot
+  :after (flycheck eglot)
+  :config
+  (global-flycheck-eglot-mode 1))
 
 ;; --------------------------------------------------
 ;; New options
@@ -615,3 +675,21 @@ the leading space is prepended later by `vc-mode-line'."
 
 ;; Remove minor mode indicators in the mode line
 (setopt mode-line-collapse-minor-modes t)
+
+;;; init.el ends here
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   '(aggressive-indent astro-ts-mode cider emmet-mode expand-region flycheck flycheck-clj-kondo
+                       forth-mode geiser-chez git-gutter iedit magit marginalia multiple-cursors
+                       orderless paredit paren-face spell-fu treemacs vertico visual-fill-column
+                       vundo yasnippet)))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
