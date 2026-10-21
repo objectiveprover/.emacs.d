@@ -74,6 +74,10 @@
         pdf-tools
         ))
 
+;; Interpret color escape sequences in the compilation mode
+(use-feature compile
+  :hook (compilation-filter . ansi-color-compilation-filter))
+
 ;; Avoid accidentally closing Emacs
 (setopt confirm-kill-emacs #'y-or-n-p)
 
