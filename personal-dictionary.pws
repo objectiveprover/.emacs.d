@@ -1,4 +1,4 @@
-personal_ws-1.1 en 160 
+personal_ws-1.1 en 166 
 alh
 alist
 astro
@@ -10,6 +10,7 @@ avahi
 axioma
 backend
 bg
+bunfig
 caddy
 calc
 canonicalurl
@@ -29,6 +30,7 @@ defaultbranch
 defun
 deno
 dev
+devdependencies
 dired
 dirs
 dirvish
@@ -59,6 +61,7 @@ fu
 gforth
 ghci
 ghostty
+gitignore
 gpg
 gpgsign
 hackiness
@@ -132,14 +135,17 @@ struct
 structs
 stylesheet
 stylesheets
+sublicense
 sudo
 svg
 terminfo
+toml
 toolset
 treemacs
 treesit
 ts
 tsc
+tsconfig
 tsx
 turbopack
 ufw
