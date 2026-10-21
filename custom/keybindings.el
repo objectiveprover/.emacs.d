@@ -34,7 +34,6 @@
                                   ("enlarge-window-horizontally" . "C-c >")
                                   ("custom/copy-to-clipboard" . "C-c c")
                                   ("custom/paste-from-clipboard" . "C-c v")
-                                  ("custom/duplicate-line" . "C-c d")
                                   ("custom/beginning-of-line" . "C-a")
                                   ("custom/backward-word-with-space" . "M-b")
                                   ("custom/forward-word-with-space" . "M-f")))
@@ -56,8 +55,9 @@
 (keymap-global-set (getkey "enlarge-window-horizontally") 'enlarge-window-horizontally)
 (keymap-global-set (getkey "custom/copy-to-clipboard") 'custom/copy-to-clipboard)
 (keymap-global-set (getkey "custom/paste-from-clipboard") 'custom/paste-from-clipboard)
-(keymap-global-set (getkey "custom/duplicate-line") 'custom/duplicate-line)
 (keymap-global-set (getkey "custom/beginning-of-line") 'custom/beginning-of-line)
+(keymap-global-set "C-c r" 'compile)
+
 
 ;; Avoid the the mistake of calling "C-x C-b" instead of "C-x b"
 (global-unset-key (kbd "C-x C-b"))

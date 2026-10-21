@@ -1,4 +1,4 @@
-personal_ws-1.1 en 156 
+personal_ws-1.1 en 160 
 alh
 alist
 astro
@@ -31,6 +31,7 @@ deno
 dev
 dired
 dirs
+dirvish
 doctype
 dom
 dropdown
@@ -126,6 +127,7 @@ siglent's
 signingkey
 smalltalk
 src
+srv
 struct
 structs
 stylesheet
@@ -136,6 +138,8 @@ terminfo
 toolset
 treemacs
 treesit
+ts
+tsc
 tsx
 turbopack
 ufw

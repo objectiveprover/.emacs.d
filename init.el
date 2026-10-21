@@ -46,31 +46,60 @@
 ;; I do this manually instead of relying on the automatic method of Emacs because
 ;; I like to know what's being installed and make sure it's all intentional.
 (setq package-selected-packages
-      '(iedit
-        vertico
-        marginalia
-        flycheck
-        yasnippet
-        expand-region
-        multiple-cursors
-        visual-fill-column
-        paren-face
-        treemacs
-        magit
-        git-gutter
-        spell-fu
+      '(
         aggressive-indent
-        paredit
-        orderless
-        vundo
-        forth-mode ; Forth
-        geiser-chez ; Chez
-        cider ; Clojure
-        flycheck-clj-kondo ; Clojure linter
-        emmet-mode
         astro-ts-mode
+        cider                           ; Clojure
+        dirvish                         ; File manager
+        emmet-mode
+        expand-region
+        flycheck
+        flycheck-clj-kondo              ; Clojure linter
+        forth-mode
+        geiser-chez
+        git-gutter
+        iedit
+        magit
+        marginalia
+        multiple-cursors
+        orderless
+        paredit
+        paren-face
         rainbow-mode
+        spell-fu
+        vertico
+        visual-fill-column
+        vundo
+        yasnippet
+        pdf-tools
         ))
+
+;; Avoid accidentally closing Emacs
+(setopt confirm-kill-emacs #'y-or-n-p)
+
+;; Don't irreversibly delete files
+(setopt delete-by-moving-to-trash t)
+
+;; Better PDF preview
+(use-package pdf-tools
+  :config
+  (pdf-loader-install))
+
+;; File manager
+(use-package dirvish
+  :init
+  (dirvish-override-dired-mode)
+  :config
+  (setq pdf-view-use-scaling nil)
+  (setq dirvish-preview-dispatchers
+        (cl-substitute 'pdf-tools 'pdf dirvish-preview-dispatchers))
+  :custom
+  (dirvish-quick-access-entries
+   '(("h" "~/" "Home")
+     ("d" "/srv/archive" "Archive")
+     ("m" "/srv/share" "Share")))
+  :bind (("C-c d" . dirvish)
+         ("C-c t" . dirvish-side)))
 
 (use-feature project
   :custom
@@ -126,20 +155,6 @@
   (keymap-global-set (getkey "hs-toggle-hiding") 'hs-toggle-hiding)
   (keymap-global-set (getkey "hs-hide-all") 'hs-hide-all))
 
-;; File tree sidebar
-(use-package treemacs
-  :custom
-  (treemacs-no-png-images t)
-  :config
-  (keymap-global-set (getkey "treemacs") 'treemacs)
-  (set-face-attribute 'treemacs-git-modified-face nil
-                      :foreground custom/color-black
-                      :slant 'normal)
-  (set-face-attribute 'treemacs-git-added-face nil
-                      :foreground custom/color-black)
-  (set-face-attribute 'treemacs-root-face nil
-                      :height 1.0))
-
 ;; Add parentheses face everywhere
 (use-package paren-face
   :hook (prog-mode . paren-face-mode)
@@ -163,6 +178,9 @@
 ;; Wrap lines at fill-column
 (setopt fill-column 100)
 (use-package visual-fill-column)
+
+(use-feature json-ts-mode
+  :mode ("\\.json\\'"))
 
 (use-feature markdown-ts-mode
   :mode ("\\.md\\'" "\\.markdown\\'")
@@ -292,7 +310,7 @@
   :init
   (spell-fu-global-mode)
   :config
-  (setq-default spell-fu-ignore-modes '(dired-mode))
+  (setq-default spell-fu-ignore-modes '(dired-mode json-ts-mode))
   (setq-default spell-fu-faces-exclude
                 '(font-lock-keyword-face
                   font-lock-function-name-face
@@ -475,9 +493,9 @@ the leading space is prepended later by `vc-mode-line'."
 ;; Ask for Y or N instead of Yes or No
 (defalias 'yes-or-no-p 'y-or-n-p)
 
-;; Display line numbers
-(global-display-line-numbers-mode 1)
-(setopt display-line-numbers-type 'relative)
+;; Display line
+(add-hook 'prog-mode-hook #'display-line-numbers-mode)
+(add-hook 'text-mode-hook #'display-line-numbers-mode)
 
 ;; Display column numbers
 (setq column-number-mode t)
@@ -641,6 +659,9 @@ the leading space is prepended later by `vc-mode-line'."
   :custom
   (css-fontify-colors nil))
 
+(use-feature typescript-ts-mode
+  :hook ((typescript-ts-mode . eglot-ensure)))
+
 (use-package astro-ts-mode
   :mode "\\.astro\\'"
   :init
@@ -656,6 +677,8 @@ the leading space is prepended later by `vc-mode-line'."
 
 (use-feature eglot
   :config
+  (add-to-list 'eglot-server-programs
+               '((typescript-ts-mode tsx-ts-mode) . ("tsc" "--lsp" "--stdio")))
   (add-to-list 'eglot-server-programs
                '(astro-ts-mode . ("astro-ls" "--stdio"
                                   :initializationOptions
@@ -677,19 +700,3 @@ the leading space is prepended later by `vc-mode-line'."
 (setopt mode-line-collapse-minor-modes t)
 
 ;;; init.el ends here
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(aggressive-indent astro-ts-mode cider emmet-mode expand-region flycheck flycheck-clj-kondo
-                       forth-mode geiser-chez git-gutter iedit magit marginalia multiple-cursors
-                       orderless paredit paren-face spell-fu treemacs vertico visual-fill-column
-                       vundo yasnippet)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
