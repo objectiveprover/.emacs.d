@@ -49,13 +49,13 @@
       '(
         aggressive-indent
         astro-ts-mode
-        cider                           ; Clojure
-        dirvish                         ; File manager
-        eat                             ; TUIs support
+        cider
+        dirvish
+        eat
         emmet-mode
         expand-region
         flycheck
-        flycheck-clj-kondo              ; Clojure linter
+        flycheck-clj-kondo
         forth-mode
         geiser-chez
         git-gutter
@@ -66,6 +66,7 @@
         orderless
         paredit
         paren-face
+        plz
         rainbow-mode
         spell-fu
         vertico
@@ -73,6 +74,50 @@
         vundo
         yasnippet
         ))
+
+;; Navigate visible windows
+(defvar-keymap custom/windmove-map
+  :doc "Move between windows by direction."
+  :repeat t
+  "w" #'windmove-up
+  "a" #'windmove-left
+  "s" #'windmove-down
+  "d" #'windmove-right)
+
+(keymap-set global-map "C-c b" custom/windmove-map)
+(repeat-mode 1)
+
+;; HTTP client
+(use-package plz
+  :functions plz custom/plz-show
+  :config
+  (defun custom/plz-show (response &optional buffer-name)
+    "Display plz RESPONSE pretty-printed in BUFFER-NAME (default *HTTP Response*)."
+    (let ((buf (get-buffer-create (or buffer-name "*HTTP Response*"))))
+      (with-current-buffer buf
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (insert (or (plz-response-body response) ""))
+          (ignore-errors (json-pretty-print-buffer)) ; leave non-JSON (e.g. HTML errors) as-is
+          (goto-char (point-min)))
+        (if (treesit-language-available-p 'json) (json-ts-mode) (js-json-mode))
+        (hs-minor-mode 1)
+        ;; set after the major mode, which resets buffer-local variables
+        (setq header-line-format (format " HTTP %d" (plz-response-status response))))
+      (display-buffer buf)))
+
+  (defun fetch-api (method url &optional data)
+    "Send DATA as JSON with METHOD to URL; show the response in *HTTP Response*."
+    (plz method url
+      :headers '(("Content-Type" . "application/json")
+                 ("Accept" . "application/json"))
+      :body (when data (json-encode data))
+      :as 'response
+      :then #'custom/plz-show
+      :else (lambda (err)
+              (if-let* ((resp (plz-error-response err)))
+                  (custom/plz-show resp)  ; 4xx/5xx: show the error body too
+                (message "Request failed: %S" (plz-error-curl-error err)))))))
 
 ;; Support TUIs
 (use-package eat)
@@ -580,6 +625,10 @@ the leading space is prepended later by `vc-mode-line'."
   (put 'warning 'flycheck-fringe-bitmaps '(custom/square . custom/square))
   (put 'info    'flycheck-fringe-bitmaps '(custom/square . custom/square)))
 
+
+(set-face-attribute 'header-line nil
+                    :background custom/color-background
+                    :foreground custom/color-3)
 (set-face-attribute 'fringe nil
                     :background custom/color-background
                     :foreground custom/color-4)
