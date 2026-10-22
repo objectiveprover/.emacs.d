@@ -51,6 +51,7 @@
         astro-ts-mode
         cider                           ; Clojure
         dirvish                         ; File manager
+        eat                             ; TUIs support
         emmet-mode
         expand-region
         flycheck
@@ -72,6 +73,9 @@
         vundo
         yasnippet
         ))
+
+;; Support TUIs
+(use-package eat)
 
 ;; Interpret color escape sequences in the compilation mode
 (use-feature compile
