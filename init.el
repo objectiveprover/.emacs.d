@@ -746,7 +746,7 @@ the leading space is prepended later by `vc-mode-line'."
 
 ;; My god, finally there is a line-spacing option, the top and bottom spacing
 ;; needs to be different for a true center though.
-(setopt line-spacing `(0.15 . 0.11))
+(setopt line-spacing `(0.20 . 0.10))
 
 ;; Remove minor mode indicators in the mode line
 (setopt mode-line-collapse-minor-modes t)
