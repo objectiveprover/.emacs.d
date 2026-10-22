@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; This part of the file is just to avoid Emacs from complaining
-;; by the lack of documentation in this file.
+;; by the lack of documentation in
 
 ;;; Code:
 
@@ -71,7 +71,6 @@
         visual-fill-column
         vundo
         yasnippet
-        pdf-tools
         ))
 
 ;; Interpret color escape sequences in the compilation mode
@@ -84,24 +83,10 @@
 ;; Don't irreversibly delete files
 (setopt delete-by-moving-to-trash t)
 
-;; Better PDF preview
-(use-package pdf-tools
-  :config
-  (pdf-loader-install))
-
 ;; File manager
 (use-package dirvish
-  :init
-  (dirvish-override-dired-mode)
   :config
-  (setq pdf-view-use-scaling nil)
-  (setq dirvish-preview-dispatchers
-        (cl-substitute 'pdf-tools 'pdf dirvish-preview-dispatchers))
-  :custom
-  (dirvish-quick-access-entries
-   '(("h" "~/" "Home")
-     ("d" "/srv/archive" "Archive")
-     ("m" "/srv/share" "Share")))
+  (dirvish-override-dired-mode)
   :bind (("C-c d" . dirvish)
          ("C-c t" . dirvish-side)))
 
@@ -280,6 +265,15 @@
   :init
   (global-flycheck-mode)
   :config
+  (set-face-attribute 'flycheck-fringe-error nil
+                    :foreground custom/color-error
+                    :background nil)
+  (set-face-attribute 'flycheck-fringe-warning nil
+                    :foreground custom/color-warning
+                    :background nil)
+  (set-face-attribute 'flycheck-fringe-info nil
+                    :foreground custom/color-info
+                    :background nil)
   (global-flycheck-eglot-mode 1)
   (set-face-attribute 'flycheck-warning nil
                       :foreground custom/color-yellow :weight 'normal)
@@ -303,7 +297,6 @@
                   (`not-checked nil)
                   (`errored " Flycheck:error")
                   (`interrupted " Flycheck:stopped")))))
-
 ;; Spell check for natural languages
 ;; Requires Aspell and the English dictionary ("en_US)
 (declare-function spell-fu-dictionary-add "spell-fu")
@@ -528,10 +521,64 @@ the leading space is prepended later by `vc-mode-line'."
 ;; Visual customization
 
 ;; Global UI
-(setopt fringe-styles 10)
+(use-feature fringe
+  :config
+  (fringe-mode '(20 . 0)))
+
+(defun custom/fringe-bitmap (name &rest rows)
+  "Define fringe bitmap NAME from ROWS of `X' (on) and `.' (off)."
+  (define-fringe-bitmap
+    name
+    (vconcat (mapcar (lambda (row)
+                       (seq-reduce (lambda (acc ch) (+ (* acc 2) (if (eq ch ?X) 1 0)))
+                                   row 0))
+                     rows))
+   nil (length (car rows)) 'center))
+
+(use-feature fringe
+  :config
+  (custom/fringe-bitmap 'custom/square
+
+                        "XXXXXXXXXX"
+                        "XXXXXXXXXX"
+                        "XXXXXXXXXX"
+                        "XXXXXXXXXX"
+                        "XXXXXXXXXX"
+                        "XXXXXXXXXX"
+                        "XXXXXXXXXX"
+                        "XXXXXXXXXX"
+                        "XXXXXXXXXX"
+                        "XXXXXXXXXX")
+
+  (custom/fringe-bitmap 'custom/wrap
+                        "X..........."
+                        "X..........."
+                        "X..........."
+                        "X..........."
+                        "X..........."
+                        "X..........."
+                        "X..........."
+                        "X..........."
+                        "XXXXXXXXXXXX")
+
+  (setq-default fringe-indicator-alist
+                (cons '(continuation custom/wrap nil)
+                      (assq-delete-all 'continuation
+                                       (copy-sequence
+                                        (default-value 'fringe-indicator-alist))))))
+
+(use-package flycheck
+  :custom
+  (flycheck-indication-mode 'left-fringe)
+  :config
+  ;; (normal . hi-res)
+  (put 'error   'flycheck-fringe-bitmaps '(custom/square . custom/square))
+  (put 'warning 'flycheck-fringe-bitmaps '(custom/square . custom/square))
+  (put 'info    'flycheck-fringe-bitmaps '(custom/square . custom/square)))
 
 (set-face-attribute 'fringe nil
-                    :background custom/color-background)
+                    :background custom/color-background
+                    :foreground custom/color-4)
 (set-face-attribute 'button nil
                     :foreground custom/color-2)
 (set-face-attribute 'mode-line nil
@@ -692,6 +739,7 @@ the leading space is prepended later by `vc-mode-line'."
   :after (flycheck eglot)
   :config
   (global-flycheck-eglot-mode 1))
+
 
 ;; --------------------------------------------------
 ;; New options

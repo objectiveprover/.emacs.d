@@ -20,9 +20,9 @@
 (defconst custom/color-dark-background "#444444")
 (defconst custom/color-region "#2a2a2a")
 
-(defconst custom/color-error "#B2828A")
-(defconst custom/color-warning "#B2A676")
-(defconst custom/color-info "#677E9A")
+(defconst custom/color-error "#bf5265")
+(defconst custom/color-warning "#db9600")
+(defconst custom/color-info "#577eab")
 
 (defconst custom/color-1 "#2E2E2E")
 (defconst custom/color-2 "#494949")
