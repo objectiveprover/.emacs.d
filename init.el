@@ -340,14 +340,14 @@
                           (warnings (or (cdr (assq 'warning counts)) 0))
                           (infos (or (cdr (assq 'info counts)) 0)))
                      (concat
-                      (propertize (format "● %d " errors)  'face `(:foreground ,custom/color-error))
-                      (propertize (format "● %d " warnings) 'face `(:foreground ,custom/color-warning))
-                      (propertize (format "● %d " infos) 'face `(:foreground ,custom/color-info)))))
+                      (propertize (format " %d:E " errors)  'face `(:foreground ,custom/color-2))
+                      (propertize (format " %d:W " warnings) 'face `(:foreground ,custom/color-2))
+                      (propertize (format " %d:I " infos) 'face `(:foreground ,custom/color-2)))))
                   (`running
                    (concat
-                    (propertize "● 󰔟 " 'face `(:foreground ,custom/color-error))
-                    (propertize "● 󰔟 " 'face `(:foreground ,custom/color-warning))
-                    (propertize "● 󰔟 " 'face `(:foreground ,custom/color-info))))
+                    (propertize " 󰔟:E " 'face `(:foreground ,custom/color-2))
+                    (propertize " 󰔟:W " 'face `(:foreground ,custom/color-2))
+                    (propertize " 󰔟:I " 'face `(:foreground ,custom/color-2))))
                   (`no-checker nil)
                   (`not-checked nil)
                   (`errored " Flycheck:error")
@@ -570,7 +570,10 @@ the leading space is prepended later by `vc-mode-line'."
 
 (use-package rainbow-mode
   :delight
-  :hook ((css-ts-mode emacs-lisp-mode) . rainbow-mode))
+  :hook
+  ((css-ts-mode emacs-lisp-mode) . rainbow-mode)
+  :custom
+  (rainbow-x-colors nil))
 
 ;; --------------------------------------------------
 ;; Visual customization
@@ -641,11 +644,11 @@ the leading space is prepended later by `vc-mode-line'."
 (set-face-attribute 'button nil
                     :foreground custom/color-2)
 (set-face-attribute 'mode-line nil
-                    :background custom/color-5
+                    :background custom/color-bright-white
                     :foreground custom/color-2
                     :box '(:style flat-button :line-width 4))
 (set-face-attribute 'mode-line-inactive nil
-                    :background custom/color-5
+                    :background custom/color-bright-white
                     :foreground custom/color-4
                     :box '(:style flat-button :line-width 4))
 (set-face-attribute 'default nil
@@ -692,7 +695,7 @@ the leading space is prepended later by `vc-mode-line'."
                     :weight 'bold)
 (set-face-attribute 'font-lock-comment-face nil
                     :slant 'italic
-                    :foreground custom/color-3)
+                    :foreground custom/color-comments)
 (set-face-attribute 'font-lock-type-face nil
                     :foreground custom/color-black)
 (set-face-attribute 'font-lock-constant-face nil
@@ -829,7 +832,7 @@ the leading space is prepended later by `vc-mode-line'."
 
 ;; My god, finally there is a line-spacing option, the top and bottom spacing
 ;; needs to be different for a true center though.
-(setopt line-spacing `(0.20 . 0.10))
+(setopt line-spacing `(0.22 . 0.12))
 
 ;; Remove minor mode indicators in the mode line
 (setopt mode-line-collapse-minor-modes t)
