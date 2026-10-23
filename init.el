@@ -20,11 +20,11 @@
 ;; Don't load packages at startup so Emacs starts faster.  A package only loads
 ;; through :demand, :init, :hook, :bind, :mode, :autoload or similar.
 (setopt use-package-always-defer t)
-;; Fetch missing packages automatically.  Built-in and local libraries need an
-;; explicit `:ensure nil', which is what `use-feature' below is for.
-(setopt use-package-always-ensure t)
 
-;; Install packages in this list with M-x package-install-selected-packages
+;; This list is the only thing that installs packages: use-package doesn't
+;; fetch anything (`use-package-always-ensure' stays off).  A use-package block
+;; for a package missing from the list fails to load and shows up right away,
+;; instead of being installed silently and drifting out of the list.
 ;; Only packages not bundled with Emacs.  Kept by hand instead of letting Emacs
 ;; manage it, so I know what's being installed and every install is intentional.
 (setq package-selected-packages
@@ -56,8 +56,14 @@
         vertico
         visual-fill-column
         vundo
+        ws-butler
         yasnippet
         ))
+
+;; On a machine missing some of them, offer to install them
+(unless (seq-every-p #'package-installed-p package-selected-packages)
+  (package-refresh-contents)
+  (package-install-selected-packages))
 
 ;; Make it obvious which packages come from an archive: `use-package' is for
 ;; archives and `use-feature' for built-in and local libraries.
@@ -85,72 +91,70 @@
 ;;   restyling means remapping a token instead of hunting for hex values.
 ;; Constants rather than a lookup table so the byte compiler (and Flycheck)
 ;; flags a misspelled name.
-;;
-;; Based on Flexoki
 
 ;; Palette: neutrals, warm grays from darkest to lightest
-(defconst custom/black    "#100F0F")
-(defconst custom/base-950 "#1C1B1A")
-(defconst custom/base-900 "#282726")
-(defconst custom/base-850 "#343331")
-(defconst custom/base-800 "#403E3C")
-(defconst custom/base-700 "#575653")
-(defconst custom/base-600 "#6F6E69")
-(defconst custom/base-500 "#878580")
-(defconst custom/base-300 "#B7B5AC")
-(defconst custom/base-200 "#CECDC3")
-(defconst custom/base-150 "#DAD8CE")
-(defconst custom/base-100 "#E6E4D9")
-(defconst custom/base-50  "#F2F0E5")
-(defconst custom/paper    "#FFFCF0")
+(defconst Minimalist/black    "#100F0F")
+(defconst Minimalist/base-950 "#1C1B1A")
+(defconst Minimalist/base-900 "#282726")
+(defconst Minimalist/base-850 "#343331")
+(defconst Minimalist/base-800 "#403E3C")
+(defconst Minimalist/base-700 "#575653")
+(defconst Minimalist/base-600 "#6F6E69")
+(defconst Minimalist/base-500 "#878580")
+(defconst Minimalist/base-300 "#B7B5AC")
+(defconst Minimalist/base-200 "#CECDC3")
+(defconst Minimalist/base-150 "#DAD8CE")
+(defconst Minimalist/base-100 "#E6E4D9")
+(defconst Minimalist/base-50  "#F2F0E5")
+(defconst Minimalist/paper    "#FFFCF0")
 
 ;; Palette: accents.  Flexoki uses the 600s on light backgrounds and the 400s
 ;; on dark ones, so the tokens below use 600s and the 400s are for a dark
 ;; variant.
-(defconst custom/red-400     "#D14D41")
-(defconst custom/orange-400  "#DA702C")
-(defconst custom/yellow-400  "#D0A215")
-(defconst custom/green-400   "#879A39")
-(defconst custom/cyan-400    "#3AA99F")
-(defconst custom/blue-400    "#4385BE")
-(defconst custom/purple-400  "#8B7EC8")
-(defconst custom/magenta-400 "#CE5D97")
+(defconst Minimalist/red-400     "#D14D41")
+(defconst Minimalist/orange-400  "#DA702C")
+(defconst Minimalist/yellow-400  "#D0A215")
+(defconst Minimalist/green-400   "#879A39")
+(defconst Minimalist/cyan-400    "#3AA99F")
+(defconst Minimalist/blue-400    "#4385BE")
+(defconst Minimalist/purple-400  "#8B7EC8")
+(defconst Minimalist/magenta-400 "#CE5D97")
 
-(defconst custom/red-600     "#AF3029")
-(defconst custom/orange-600  "#BC5215")
-(defconst custom/yellow-600  "#AD8301")
-(defconst custom/green-600   "#66800B")
-(defconst custom/cyan-600    "#24837B")
-(defconst custom/blue-600    "#205EA6")
-(defconst custom/purple-600  "#5E409D")
-(defconst custom/magenta-600 "#A02F6F")
+(defconst Minimalist/red-600     "#AF3029")
+(defconst Minimalist/orange-600  "#BC5215")
+(defconst Minimalist/yellow-600  "#AD8301")
+(defconst Minimalist/green-600   "#66800B")
+(defconst Minimalist/cyan-600    "#24837B")
+(defconst Minimalist/blue-600    "#205EA6")
+(defconst Minimalist/purple-600  "#5E409D")
+(defconst Minimalist/magenta-600 "#A02F6F")
 
 ;; Tokens: text
-(defconst custom/fg           custom/base-950    "Body text, code and the cursor.")
-(defconst custom/fg-string    custom/base-900    "String literals.")
-(defconst custom/fg-comment   custom/magenta-600 "Comments.")
-(defconst custom/fg-secondary custom/base-800    "Secondary UI text: mode line, buttons.")
-(defconst custom/fg-subtle    custom/base-600    "Header line.")
-(defconst custom/fg-faint     custom/base-300    "Gutter text: line numbers, fringe, Git signs.")
-(defconst custom/fg-ghost     custom/base-150    "Barely visible syntax: parentheses.")
+(defconst Minimalist/fg           Minimalist/base-950    "Body text, code and the cursor.")
+(defconst Minimalist/fg-string    Minimalist/base-900    "String literals.")
+(defconst Minimalist/fg-comment   Minimalist/magenta-600 "Comments.")
+(defconst Minimalist/fg-secondary Minimalist/base-800    "Secondary UI text: mode line, buttons.")
+(defconst Minimalist/fg-subtle    Minimalist/base-600    "Header line.")
+(defconst Minimalist/fg-faint     Minimalist/base-300    "Line numbers, fringe, Git signs.")
+(defconst Minimalist/fg-ghost     Minimalist/base-150    "Barely visible syntax: parentheses.")
 
 ;; Tokens: surfaces
-(defconst custom/bg           custom/paper    "Buffer background.")
-(defconst custom/bg-surface   custom/base-50  "Raised surfaces: the mode line.")
-(defconst custom/bg-selection custom/base-150 "Region, search matches and highlights.")
+(defconst Minimalist/bg           Minimalist/paper    "Buffer background.")
+(defconst Minimalist/bg-surface   Minimalist/base-50  "Raised surfaces: the mode line.")
+(defconst Minimalist/bg-selection Minimalist/base-150 "Region, search matches and highlights.")
 
 ;; Tokens: markers and states
-(defconst custom/marker       custom/base-300  "Non-text marks: whitespace, iedit, saved dot.")
-(defconst custom/modified     custom/green-600 "Unsaved-changes dot.")
-(defconst custom/read-only    custom/black     "Read-only dot.")
-(defconst custom/accent       custom/blue-600  "Directories.")
-(defconst custom/paren-match  custom/red-600   "Matching parenthesis.")
+(defconst Minimalist/marker       Minimalist/base-300  "Whitespace, iedit, saved dot.")
+(defconst Minimalist/modified     Minimalist/green-600 "Unsaved-changes dot.")
+(defconst Minimalist/read-only    Minimalist/black     "Read-only dot.")
+(defconst Minimalist/accent       Minimalist/blue-600  "Directories.")
+(defconst Minimalist/paren-match  Minimalist/red-600   "Matching parenthesis.")
 
 ;; Tokens: diagnostics
-(defconst custom/error        custom/red-600    "Errors.")
-(defconst custom/warning      custom/yellow-600 "Warning marks in the fringe.")
-(defconst custom/warning-text custom/orange-600 "Text flagged with a warning.")
-(defconst custom/info         custom/blue-600   "Info diagnostics.")
+(defconst Minimalist/error        Minimalist/red-600    "Errors.")
+(defconst Minimalist/warning      Minimalist/yellow-600 "Warning marks in the fringe.")
+(defconst Minimalist/warning-text Minimalist/orange-600 "Text flagged with a warning.")
+(defconst Minimalist/info         Minimalist/blue-600   "Info diagnostics.")
 
 ;; --------------------------------------------------------------------------------
 ;; General behavior
@@ -171,8 +175,10 @@
         auto-save-file-name-transforms
         `((".*" ,(expand-file-name "autosaves/" user-emacs-directory) t)))
 
-;; Remove trailing whitespace when saving a file
-(add-hook 'before-save-hook #'delete-trailing-whitespace)
+;; Remove trailing whitespace on save, but only from lines I edited, so files
+;; in shared repositories don't get unrelated whitespace changes
+(use-package ws-butler
+  :hook ((prog-mode text-mode) . ws-butler-mode))
 
 ;; Keep buffers in sync with changes on disk, directories included
 (setopt global-auto-revert-non-file-buffers t)
@@ -190,7 +196,7 @@
 (put 'narrow-to-region 'disabled nil)
 
 ;; Navigate visible windows
-(defvar-keymap custom/windmove-map
+(defvar-keymap Minimalist/windmove-map
   :doc "Move between windows by direction."
   :repeat t
   "w" #'windmove-up
@@ -198,19 +204,19 @@
   "s" #'windmove-down
   "d" #'windmove-right)
 
-(keymap-set global-map "C-c b" custom/windmove-map)
+(keymap-set global-map "C-c b" Minimalist/windmove-map)
 (repeat-mode 1)
 
 ;; Global keybindings
 (require 'bind-key)
 (bind-keys
- ("C-a"     . custom/beginning-of-line)
+ ("C-a"     . Minimalist/beginning-of-line)
  ("C-x C-r" . recentf-open)
  ("C-c ;"   . comment-line)
  ("C-c ^"   . enlarge-window)
  ("C-c >"   . enlarge-window-horizontally)
- ("C-c c"   . custom/copy-to-clipboard)
- ("C-c v"   . custom/paste-from-clipboard)
+ ("C-c c"   . Minimalist/copy-to-clipboard)
+ ("C-c v"   . Minimalist/paste-from-clipboard)
  ("C-c l"   . dictionary-lookup-definition)
  ("C-c r"   . compile))
 
@@ -220,7 +226,7 @@
 ;; --------------------------------------------------------------------------------
 ;; Editing
 
-(defun custom/beginning-of-line ()
+(defun Minimalist/beginning-of-line ()
   "Toggle between the first non-whitespace character and the beginning of the line."
   (interactive)
   (let ((orig-point (point)))
@@ -232,7 +238,7 @@
 (setopt duplicate-line-final-position 1)
 
 ;; The opposite of `fill-paragraph'.  By Stefan Monnier.
-(defun unfill-paragraph (&optional region)
+(defun Minimalist/unfill-paragraph (&optional region)
   "Join a multi-line paragraph into a single line.
 With REGION non-nil, unfill the paragraphs in the active region."
   (interactive (progn (barf-if-buffer-read-only) '(t)))
@@ -245,14 +251,14 @@ With REGION non-nil, unfill the paragraphs in the active region."
 ;; terminal, copying goes through OSC 52 and pasting through an external
 ;; command.
 
-(defconst custom/clipboard-paste-command
+(defconst Minimalist/clipboard-paste-command
   (cond ((eq system-type 'darwin) "pbpaste")
         ((getenv "WAYLAND_DISPLAY") "wl-paste --no-newline")
         ((getenv "DISPLAY") "xclip -selection clipboard -o")
         (t nil))
   "Shell command writing the system clipboard to stdout, or nil if unavailable.")
 
-(defun custom/osc52-copy (text)
+(defun Minimalist/osc52-copy (text)
   "Send TEXT to the terminal's clipboard via OSC 52.
 Wraps the sequence for tmux/screen passthrough when running inside either."
   (let* ((payload (base64-encode-string
@@ -265,26 +271,26 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
             (format "\eP%s\e\\" seq))
            (t seq)))))
 
-(defun custom/copy-to-clipboard (beg end)
+(defun Minimalist/copy-to-clipboard (beg end)
   "Copy the active region between BEG and END to the system clipboard."
   (interactive (if (region-active-p)
                    (list (region-beginning) (region-end))
                  (user-error "No active region to copy")))
   (if (display-graphic-p)
       (clipboard-kill-ring-save beg end)
-    (custom/osc52-copy (buffer-substring-no-properties beg end)))
+    (Minimalist/osc52-copy (buffer-substring-no-properties beg end)))
   (deactivate-mark)
   (message "Copied region to clipboard"))
 
-(defun custom/paste-from-clipboard ()
+(defun Minimalist/paste-from-clipboard ()
   "Insert the system clipboard at point."
   (interactive)
   (cond ((display-graphic-p) (clipboard-yank))
-        (custom/clipboard-paste-command
+        (Minimalist/clipboard-paste-command
          (let ((text (with-temp-buffer
                        ;; Discard stderr so error messages never get inserted
                        (when (zerop (call-process-shell-command
-                                     custom/clipboard-paste-command nil '(t nil)))
+                                     Minimalist/clipboard-paste-command nil '(t nil)))
                          (buffer-string)))))
            (if text
                (insert text)
@@ -315,7 +321,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 (use-package iedit
   :bind ("C-c i" . iedit-mode)
   :config
-  (set-face-background 'iedit-occurrence custom/marker))
+  (set-face-background 'iedit-occurrence Minimalist/marker))
 
 ;; Display the undo tree, in place of the default `undo' key
 (use-package vundo
@@ -413,7 +419,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
                   eglot-semantic-defaultLibrary))
   ;; There are lots of technical words that we don't want flagged as typos,
   ;; so they go in a local custom dictionary.
-  (defun custom/spell-fu-add-personal-dict ()
+  (defun Minimalist/spell-fu-add-personal-dict ()
     "Add the en_US and personal dictionaries to the current buffer."
     (spell-fu-dictionary-add
      (spell-fu-get-ispell-dictionary "en_US"))
@@ -421,7 +427,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
      (spell-fu-get-personal-dictionary
       "en-personal"
       (expand-file-name "personal-dictionary.pws" user-emacs-directory))))
-  (add-hook 'spell-fu-mode-hook #'custom/spell-fu-add-personal-dict)
+  (add-hook 'spell-fu-mode-hook #'Minimalist/spell-fu-add-personal-dict)
   ;; Enable last, so buffers that exist already also get the hook
   (spell-fu-global-mode))
 
@@ -435,34 +441,30 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
   :config
   ;; (normal . hi-res) bitmaps, defined in the fringe section
   (dolist (level '(error warning info))
-    (put level 'flycheck-fringe-bitmaps '(custom/square . custom/square)))
+    (put level 'flycheck-fringe-bitmaps '(Minimalist/square . Minimalist/square)))
   (set-face-attribute 'flycheck-fringe-error nil
-                      :foreground custom/error
+                      :foreground Minimalist/error
                       :background 'unspecified)
   (set-face-attribute 'flycheck-fringe-warning nil
-                      :foreground custom/warning
+                      :foreground Minimalist/warning
                       :background 'unspecified)
   (set-face-attribute 'flycheck-fringe-info nil
-                      :foreground custom/info
+                      :foreground Minimalist/info
                       :background 'unspecified)
   (set-face-attribute 'flycheck-warning nil
-                      :foreground custom/warning-text :weight 'normal)
+                      :foreground Minimalist/warning-text :weight 'normal)
   (setq flycheck-mode-line
         '(:eval (pcase flycheck-last-status-change
                   (`finished
-                   (let* ((counts (flycheck-count-errors flycheck-current-errors))
-                          (errors (or (cdr (assq 'error counts)) 0))
-                          (warnings (or (cdr (assq 'warning counts)) 0))
-                          (infos (or (cdr (assq 'info counts)) 0)))
-                     (concat
-                      (propertize (format " %d:E " errors)  'face `(:foreground ,custom/fg-secondary))
-                      (propertize (format " %d:W " warnings) 'face `(:foreground ,custom/fg-secondary))
-                      (propertize (format " %d:I " infos) 'face `(:foreground ,custom/fg-secondary)))))
+                   (let ((counts (flycheck-count-errors flycheck-current-errors)))
+                     (propertize (format " %d:E  %d:W  %d:I "
+                                         (alist-get 'error counts 0)
+                                         (alist-get 'warning counts 0)
+                                         (alist-get 'info counts 0))
+                                 'face `(:foreground ,Minimalist/fg-secondary))))
                   (`running
-                   (concat
-                    (propertize " 󰔟:E " 'face `(:foreground ,custom/fg-secondary))
-                    (propertize " 󰔟:W " 'face `(:foreground ,custom/fg-secondary))
-                    (propertize " 󰔟:I " 'face `(:foreground ,custom/fg-secondary))))
+                   (propertize " 󰔟:E  󰔟:W  󰔟:I "
+                               'face `(:foreground ,Minimalist/fg-secondary)))
                   (`no-checker nil)
                   (`not-checked nil)
                   (`errored " Flycheck:error")
@@ -484,7 +486,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
   (dired-listing-switches "-alh")
   (dired-dwim-target t)
   :config
-  (set-face-foreground 'dired-directory custom/accent))
+  (set-face-foreground 'dired-directory Minimalist/accent))
 
 (use-feature project
   :custom
@@ -504,17 +506,17 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
   (git-gutter:deleted-sign "\uf068")
   :config
   (dolist (face '(git-gutter:modified git-gutter:added git-gutter:deleted))
-    (set-face-attribute face nil :foreground custom/fg-faint :weight 'normal)))
+    (set-face-attribute face nil :foreground Minimalist/fg-faint :weight 'normal)))
 
 ;; --------------------------------------------------------------------------------
 ;; Tools
 
-;; HTTP client.  `fetch-api' is autoloaded, so it works before plz is loaded.
+;; HTTP client.  `Minimalist/fetch-api' is autoloaded, so it works before plz is loaded.
 (use-package plz
-  :autoload fetch-api
-  :functions plz custom/plz-show
+  :autoload Minimalist/fetch-api
+  :functions plz Minimalist/plz-show
   :config
-  (defun custom/plz-show (response &optional buffer-name)
+  (defun Minimalist/plz-show (response &optional buffer-name)
     "Display plz RESPONSE pretty-printed in BUFFER-NAME (default *HTTP Response*)."
     (let ((buf (get-buffer-create (or buffer-name "*HTTP Response*"))))
       (with-current-buffer buf
@@ -529,17 +531,17 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
         (setq header-line-format (format " HTTP %d" (plz-response-status response))))
       (display-buffer buf)))
 
-  (defun fetch-api (method url &optional data)
+  (defun Minimalist/fetch-api (method url &optional data)
     "Send DATA as JSON with METHOD to URL; show the response in *HTTP Response*."
     (plz method url
          :headers '(("Content-Type" . "application/json")
                     ("Accept" . "application/json"))
          :body (when data (json-encode data))
          :as 'response
-         :then #'custom/plz-show
+         :then #'Minimalist/plz-show
          :else (lambda (err)
                  (if-let* ((resp (plz-error-response err)))
-                     (custom/plz-show resp)  ; 4xx/5xx: show the error body too
+                     (Minimalist/plz-show resp)  ; 4xx/5xx: show the error body too
                    (message "Request failed: %S" (plz-error-curl-error err)))))))
 
 ;; Terminal emulator that supports TUIs
@@ -554,10 +556,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 
 ;; --------------------------------------------------------------------------------
 ;; Interface
-
-(menu-bar-mode -1)
-(tool-bar-mode -1)
-(setopt scroll-bar-mode nil)
+;; The menu bar, tool bar and scroll bars are turned off in early-init.el.
 
 ;; Stop the cursor from blinking.
 ;; In a terminal, what "visible" means depends on the emulator.
@@ -576,7 +575,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 
 ;; Fringe
 
-(defun custom/fringe-bitmap (name &rest rows)
+(defun Minimalist/fringe-bitmap (name &rest rows)
   "Define fringe bitmap NAME from ROWS of `X' (on) and `.' (off)."
   (define-fringe-bitmap
     name
@@ -590,32 +589,32 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
   :config
   (fringe-mode '(20 . 0))
 
-  (custom/fringe-bitmap 'custom/square
-                        "XXXXXXXXXX"
-                        "XXXXXXXXXX"
-                        "XXXXXXXXXX"
-                        "XXXXXXXXXX"
-                        "XXXXXXXXXX"
-                        "XXXXXXXXXX"
-                        "XXXXXXXXXX"
-                        "XXXXXXXXXX"
-                        "XXXXXXXXXX"
-                        "XXXXXXXXXX")
+  (Minimalist/fringe-bitmap 'Minimalist/square
+                            "XXXXXXXXXX"
+                            "XXXXXXXXXX"
+                            "XXXXXXXXXX"
+                            "XXXXXXXXXX"
+                            "XXXXXXXXXX"
+                            "XXXXXXXXXX"
+                            "XXXXXXXXXX"
+                            "XXXXXXXXXX"
+                            "XXXXXXXXXX"
+                            "XXXXXXXXXX")
 
-  (custom/fringe-bitmap 'custom/wrap
-                        "X..........."
-                        "X..........."
-                        "X..........."
-                        "X..........."
-                        "X..........."
-                        "X..........."
-                        "X..........."
-                        "X..........."
-                        "XXXXXXXXXXXX")
+  (Minimalist/fringe-bitmap 'Minimalist/wrap
+                            "X..........."
+                            "X..........."
+                            "X..........."
+                            "X..........."
+                            "X..........."
+                            "X..........."
+                            "X..........."
+                            "X..........."
+                            "XXXXXXXXXXXX")
 
   ;; Mark wrapped lines with the custom bitmap
   (setq-default fringe-indicator-alist
-                (cons '(continuation custom/wrap nil)
+                (cons '(continuation Minimalist/wrap nil)
                       (assq-delete-all 'continuation
                                        (copy-sequence
                                         (default-value 'fringe-indicator-alist))))))
@@ -624,147 +623,154 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 ;; The format below is fully custom, so the default mode-line-* pieces
 ;; (mule info, remote indicator, frame id, position, minor modes) never show.
 
-(defconst custom/vc-git-icon "\ue0a0"
+(defconst Minimalist/vc-git-icon "\ue0a0"
   "Branch glyph (U+E0A0, Powerline/Nerd Font set).")
 
-(defun custom/vc-git-mode-line (s)
+(defun Minimalist/vc-git-mode-line (s)
   "Swap the \"Git\" backend name in S for a branch icon.
-S is like \"Git-master\": index 3 is the state char, 4+ the branch.
-Returns \"<icon> master \"; the state shows only through the face
-copied from S.  The leading space is prepended later by `vc-mode-line'."
-  (let ((face   (get-text-property 0 'face s))
-        (branch (substring s 4)))
-    (propertize (concat custom/vc-git-icon " " branch " ")
-                'face face)))
+S looks like \"Git-main\": the backend name, a state character, then the
+branch.  Returns \"<icon> main \"; the state shows only through the face
+copied from S.  If S doesn't have that shape (the format is internal to
+vc-git and could change), it's returned unchanged rather than mangled.
+The leading space is prepended later by `vc-mode-line'."
+  (if (string-match "\\`Git[^[:alnum:]]\\(.+\\)\\'" s)
+      (propertize (concat Minimalist/vc-git-icon " " (match-string 1 s) " ")
+                  'face (get-text-property 0 'face s))
+    s))
 
-(advice-add 'vc-git-mode-line-string :filter-return #'custom/vc-git-mode-line)
+(advice-add 'vc-git-mode-line-string :filter-return #'Minimalist/vc-git-mode-line)
 
-(defun custom/file-status-indicator ()
+(defun Minimalist/file-status-indicator ()
   "Colored circle reflecting buffer save/modify/read-only state."
   (let ((color (cond
-                (buffer-read-only custom/read-only) ; read-only
-                ((buffer-modified-p) custom/modified) ; unsaved changes
-                (t custom/marker)))) ; saved
+                (buffer-read-only Minimalist/read-only) ; read-only
+                ((buffer-modified-p) Minimalist/modified) ; unsaved changes
+                (t Minimalist/marker)))) ; saved
     (propertize " ●" 'face `(:foreground ,color))))
 
-(defvar-local custom/display-path-cache nil
+(defvar-local Minimalist/display-path-cache nil
   "Cons of (TRUENAME . DISPLAY-STRING) for the mode line.")
 
-(defun custom/buffer-display-path ()
+(defun Minimalist/buffer-display-path ()
   "Project name and project-relative path or the full path or the buffer name."
   (if-let* ((file buffer-file-truename))
-      (if (equal (car custom/display-path-cache) file)
-          (cdr custom/display-path-cache)
+      (if (equal (car Minimalist/display-path-cache) file)
+          (cdr Minimalist/display-path-cache)
         (let* ((proj (project-current))
                (str (if proj
                         (concat (project-name proj) "/"
                                 (file-relative-name file (project-root proj)))
                       file)))
-          (setq custom/display-path-cache (cons file str))
+          (setq Minimalist/display-path-cache (cons file str))
           str))
     (buffer-name)))
 
-(defvar-local custom/line-count-cache nil
+(defvar-local Minimalist/line-count-cache nil
   "Cons of (KEY . LINE-COUNT-STRING) for the mode line.
 KEY is (CHARS-MODIFIED-TICK POINT-MIN POINT-MAX), so the count is
 redone only after an edit or a change of narrowing.")
 
-(defun custom/buffer-line-count ()
+(defun Minimalist/buffer-line-count ()
   "Number of lines in the accessible part of the buffer, as a string.
 `count-lines' scans the whole buffer, so the result is cached instead
 of recomputed on every mode-line redisplay."
   (let ((key (list (buffer-chars-modified-tick) (point-min) (point-max))))
-    (if (equal (car custom/line-count-cache) key)
-        (cdr custom/line-count-cache)
+    (if (equal (car Minimalist/line-count-cache) key)
+        (cdr Minimalist/line-count-cache)
       (let ((str (number-to-string (count-lines (point-min) (point-max)))))
-        (setq custom/line-count-cache (cons key str))
+        (setq Minimalist/line-count-cache (cons key str))
         str))))
 
+(defconst Minimalist/mode-line-gap "    "
+  "Space between mode-line segments.")
+
+;; A list starting with a symbol is a conditional in `mode-line-format', so
+;; lists that should just show `Minimalist/mode-line-gap' first start with "".
 (setq-default mode-line-format
-              '("%1."
+              '(" "
                 (buffer-file-truename
-                 ((:eval (custom/file-status-indicator)) "%2."))
-                (:eval (propertize (custom/buffer-display-path)
+                 ((:eval (Minimalist/file-status-indicator)) "  "))
+                (:eval (propertize (Minimalist/buffer-display-path)
                                    'face '(:weight bold)))
-                "%4.\uebd0%2."
-                "%l of "
-                (:eval (custom/buffer-line-count))
-                "%4."
+                Minimalist/mode-line-gap
+                "\uebd0  %l of "
+                (:eval (Minimalist/buffer-line-count))
+                Minimalist/mode-line-gap
                 mode-name
-                (vc-mode ("%4." vc-mode))
-                "%4."
+                (vc-mode ("" Minimalist/mode-line-gap vc-mode))
+                Minimalist/mode-line-gap
                 flycheck-mode-line))
 
 ;; Faces
 
 (set-face-attribute 'default nil
-                    :foreground custom/fg
-                    :background custom/bg
+                    :foreground Minimalist/fg
+                    :background Minimalist/bg
                     :height 140
                     :family "JetBrainsMono Nerd Font")
 (set-face-attribute 'header-line nil
-                    :background custom/bg
-                    :foreground custom/fg-subtle)
+                    :background Minimalist/bg
+                    :foreground Minimalist/fg-subtle)
 (set-face-attribute 'fringe nil
-                    :background custom/bg
-                    :foreground custom/fg-faint)
+                    :background Minimalist/bg
+                    :foreground Minimalist/fg-faint)
 (set-face-attribute 'mode-line nil
-                    :background custom/bg-surface
-                    :foreground custom/fg-secondary
+                    :background Minimalist/bg-surface
+                    :foreground Minimalist/fg-secondary
                     :box '(:style flat-button :line-width 4))
 (set-face-attribute 'mode-line-inactive nil
-                    :background custom/bg-surface
-                    :foreground custom/fg-faint
+                    :background Minimalist/bg-surface
+                    :foreground Minimalist/fg-faint
                     :box '(:style flat-button :line-width 4))
 (set-face-attribute 'button nil
-                    :foreground custom/fg-secondary)
+                    :foreground Minimalist/fg-secondary)
 (set-face-attribute 'show-paren-match nil
-                    :foreground custom/paren-match
-                    :background custom/bg
+                    :foreground Minimalist/paren-match
+                    :background Minimalist/bg
                     :weight 'bold)
-(set-face-foreground 'line-number custom/fg-faint)
+(set-face-foreground 'line-number Minimalist/fg-faint)
 (set-face-attribute 'line-number-current-line nil
-                    :foreground custom/fg-secondary)
-(set-face-background 'region custom/bg-selection)
+                    :foreground Minimalist/fg-secondary)
+(set-face-background 'region Minimalist/bg-selection)
 (set-face-attribute 'highlight nil
-                    :background custom/bg-selection)
+                    :background Minimalist/bg-selection)
 (set-face-attribute 'isearch nil
-                    :background custom/bg-selection
-                    :foreground custom/fg
+                    :background Minimalist/bg-selection
+                    :foreground Minimalist/fg
                     :weight 'bold)
 (set-face-attribute 'lazy-highlight nil
-                    :background custom/bg-selection
-                    :foreground custom/fg)
+                    :background Minimalist/bg-selection
+                    :foreground Minimalist/fg)
 (set-face-attribute 'minibuffer-prompt nil
-                    :foreground custom/fg
+                    :foreground Minimalist/fg
                     :weight 'normal)
 ;; Only :background sets the cursor color (GUI only; terminals draw their own)
 (set-face-attribute 'cursor nil
-                    :background custom/fg)
+                    :background Minimalist/fg)
 (set-face-attribute 'error nil
-                    :foreground custom/error
-                    :underline `(:style wave :color ,custom/error)
+                    :foreground Minimalist/error
+                    :underline `(:style wave :color ,Minimalist/error)
                     :weight 'normal)
 
 ;; Syntax highlighting: grayscale, structure shown through weight and slant
 (set-face-attribute 'font-lock-function-name-face nil
-                    :foreground custom/fg
+                    :foreground Minimalist/fg
                     :weight 'bold)
 (set-face-attribute 'font-lock-keyword-face nil
-                    :foreground custom/fg
+                    :foreground Minimalist/fg
                     :weight 'bold)
 (set-face-attribute 'font-lock-builtin-face nil
-                    :foreground custom/fg
+                    :foreground Minimalist/fg
                     :weight 'bold
                     :slant 'italic)
 (set-face-attribute 'font-lock-variable-name-face nil
-                    :foreground custom/fg
+                    :foreground Minimalist/fg
                     :slant 'italic)
 (set-face-attribute 'font-lock-comment-face nil
-                    :foreground custom/fg-comment
+                    :foreground Minimalist/fg-comment
                     :slant 'italic)
 (set-face-attribute 'font-lock-string-face nil
-                    :foreground custom/fg-string
+                    :foreground Minimalist/fg-string
                     :slant 'italic)
 (dolist (face '(font-lock-function-call-face
                 font-lock-variable-use-face
@@ -776,7 +782,7 @@ of recomputed on every mode-line redisplay."
                 font-lock-bracket-face
                 font-lock-delimiter-face
                 font-lock-escape-face))
-  (set-face-attribute face nil :foreground custom/fg))
+  (set-face-attribute face nil :foreground Minimalist/fg))
 
 ;; Dim parentheses in code
 (use-package paren-face
@@ -785,7 +791,7 @@ of recomputed on every mode-line redisplay."
   (paren-face-regexp "[][()}{]")
   :config
   (set-face-attribute 'parenthesis nil
-                      :foreground custom/fg-ghost
+                      :foreground Minimalist/fg-ghost
                       :weight 'normal))
 
 ;; Whitespace indicators (M-x whitespace-mode)
@@ -795,7 +801,7 @@ of recomputed on every mode-line redisplay."
                            space-after-tab space-mark tab-mark newline-mark
                            missing-newline-at-eof))
   :custom-face
-  (whitespace-space ((t (:background nil :foreground ,custom/marker)))))
+  (whitespace-space ((t (:background nil :foreground ,Minimalist/marker)))))
 
 ;; --------------------------------------------------------------------------------
 ;; Text and markup
@@ -884,7 +890,7 @@ of recomputed on every mode-line redisplay."
 (setopt elisp-fontify-semantically t
         elisp-variable-at-point t)
 (set-face-attribute 'elisp-variable-at-point nil
-                    :background custom/bg-selection)
+                    :background Minimalist/bg-selection)
 
 ;; Show whether the buffer uses lexical or dynamic binding in the mode name
 (add-hook 'emacs-lisp-mode-hook
