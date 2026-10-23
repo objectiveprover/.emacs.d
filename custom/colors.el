@@ -28,7 +28,7 @@
 (defconst custom/color-2 "#494949")
 (defconst custom/color-3 "#707070")
 (defconst custom/color-4 "#BBBBBB")
-(defconst custom/color-5 "#EDEDED")
+(defconst custom/color-5 "#dddddd")
 
 
 (provide 'colors)

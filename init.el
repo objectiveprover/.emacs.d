@@ -11,6 +11,12 @@
 
 (require 'package)
 
+(use-package exec-path-from-shell
+  :if (memq window-system '(mac ns))
+  :config
+  (exec-path-from-shell-copy-envs '("PATH" "GOPATH" "GOROOT"))
+  (exec-path-from-shell-initialize))
+
 ;; Make more intuitive knowing which packages are coming from an archive.
 ;; use-package is for archives and use-feature is for built-in ones.
 ;; Remember to use the library name, not the package name.
@@ -40,6 +46,12 @@
 ;; Package repository
 ;; TODO: I should get all the packages locally and not depend on a package manager
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+
+;; Avoid automatically loading packages when starting Emacs so it starts faster
+(setopt use-package-always-defer t)
+;; Automatically fetch packages if they are not present.
+;; Important: Because of this, an explicit `:ensure nil` is necessary sometimes
+(setopt use-package-always-ensure t)
 
 ;; Install packages in this list with M-x package-install-selected-packages
 ;; We only need to list the packages that are not bundled with Emacs
@@ -152,12 +164,6 @@
 ;; Remove the scroll bar
 (setopt scroll-bar-mode nil)
 
-;; Avoid automatically loading packages when starting Emacs so it starts faster
-(setopt use-package-always-defer t)
-;; Automatically fetch packages if they are not present.
-;; Important: Because of this, an explicit `:ensure nil` is necessary sometimes
-(setopt use-package-always-ensure t)
-
 ;; Keep parentheses
 (use-package paredit
   :hook ((emacs-lisp-mode . paredit-mode)
@@ -199,7 +205,7 @@
   :config
   (global-paren-face-mode)
   (set-face-attribute 'parenthesis nil
-                      :foreground custom/color-4
+                      :foreground custom/color-5
                       :weight 'normal)
   (setq paren-face-modes '(prog-mode))
   (setq paren-face-regexp "[][()}{]"))
@@ -645,18 +651,15 @@ the leading space is prepended later by `vc-mode-line'."
 (set-face-attribute 'default nil
                     :foreground custom/color-black
                     :background custom/color-background
-                    :height 135
+                    :height 140
                     :family "JetBrainsMono Nerd Font")
-
 (set-face-attribute 'show-paren-match nil
                     :foreground custom/color-red
                     :background custom/color-background
                     :weight 'bold)
-
 (set-face-foreground 'line-number custom/color-4)
 (set-face-attribute 'line-number-current-line nil
                     :foreground custom/color-2)
-
 (set-face-background 'region custom/color-5)
 (set-face-attribute 'isearch nil
                     :background custom/color-5
@@ -722,6 +725,41 @@ the leading space is prepended later by `vc-mode-line'."
                     :background custom/color-5)
 
 ;; --------------------------------------------------
+;; General Programming
+
+(setopt treesit-enabled-modes '(mhtml-ts-mode css-ts-mode js-ts-mode)
+        treesit-auto-install-grammar 'ask)
+
+;; M-x treesit-install-language-grammar
+(use-feature treesit
+  :config
+  (setopt eglot-autoshutdown t
+          eglot-events-buffer-config '(:size 0)) ; drop JSON-RPC logging, noticeably faster
+  (setq-default eglot-workspace-configuration
+                '(:gopls (:gofumpt t
+                                   :staticcheck t
+                                   :usePlaceholders t
+                                   :hints (:parameterNames t :assignVariableTypes t))))
+  (setopt treesit-language-source-alist
+          '((go    "https://github.com/tree-sitter/tree-sitter-go")
+            (gomod "https://github.com/camdencheek/tree-sitter-go-mod")
+            (astro "https://github.com/virchau13/tree-sitter-astro"))))
+
+(use-feature eglot
+  :config
+  (add-to-list 'eglot-server-programs
+               '((typescript-ts-mode tsx-ts-mode) . ("tsc" "--lsp" "--stdio")))
+  (add-to-list 'eglot-server-programs
+               '(astro-ts-mode . ("astro-ls" "--stdio"
+                                  :initializationOptions
+                                  (:typescript (:tsdk "./node_modules/typescript/lib"))))))
+
+(use-package flycheck-eglot
+  :after (flycheck eglot)
+  :config
+  (global-flycheck-eglot-mode 1))
+
+;; --------------------------------------------------
 ;; Scheme (Chez Scheme)
 
 (use-package geiser-chez
@@ -749,9 +787,6 @@ the leading space is prepended later by `vc-mode-line'."
 ;; --------------------------------------------------
 ;; Web
 
-(setopt treesit-enabled-modes '(mhtml-ts-mode css-ts-mode js-ts-mode)
-        treesit-auto-install-grammar 'ask)
-
 (use-package emmet-mode
   :hook ((mhtml-ts-mode astro-ts-mode) . emmet-mode))
 
@@ -768,9 +803,6 @@ the leading space is prepended later by `vc-mode-line'."
 
 (use-package astro-ts-mode
   :mode "\\.astro\\'"
-  :init
-  (add-to-list 'treesit-language-source-alist
-               '(astro "https://github.com/virchau13/tree-sitter-astro"))
   :hook
   (astro-ts-mode . eglot-ensure)
   :config
@@ -779,19 +811,17 @@ the leading space is prepended later by `vc-mode-line'."
     (unless (treesit-language-available-p lang)
       (treesit-install-language-grammar lang))))
 
-(use-feature eglot
-  :config
-  (add-to-list 'eglot-server-programs
-               '((typescript-ts-mode tsx-ts-mode) . ("tsc" "--lsp" "--stdio")))
-  (add-to-list 'eglot-server-programs
-               '(astro-ts-mode . ("astro-ls" "--stdio"
-                                  :initializationOptions
-                                  (:typescript (:tsdk "./node_modules/typescript/lib"))))))
+;; --------------------------------------------------
+;; Go
 
-(use-package flycheck-eglot
-  :after (flycheck eglot)
-  :config
-  (global-flycheck-eglot-mode 1))
+(use-feature go-ts-mode
+  :mode (("\\.go\\'"     . go-ts-mode)
+         ("/go\\.mod\\'" . go-mod-ts-mode))
+  :custom
+  (go-ts-indent-offset 4)
+  :hook
+  ((go-ts-mode . eglot-ensure)
+   (go-ts-mode . (lambda () (setq-local tab-width 4)))))
 
 
 ;; --------------------------------------------------
