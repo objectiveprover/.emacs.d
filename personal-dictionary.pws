@@ -1,9 +1,10 @@
-personal_ws-1.1 en 167 
+personal_ws-1.1 en 180 
 alh
 alist
 astro
 atomicity
 autoload
+autoloaded
 autosave
 autosaves
 avahi
@@ -46,6 +47,7 @@ emacs
 emacsmirror
 endline
 env
+eptmux
 eslint
 eval
 favicon
@@ -64,6 +66,7 @@ ghostty
 gitignore
 gpg
 gpgsign
+grayscale
 hackiness
 hernández
 homebrew
@@ -87,11 +90,13 @@ localhost
 localsend
 ls
 lsp
+macos
 magit
 mailto
 makefile
 mdns
 melpa
+minibuffer
 modeline
 nav
 neuralink
@@ -122,6 +127,7 @@ prolog
 pws
 quasiquote
 rebase
+redisplay
 repos
 runghc
 setq
@@ -132,6 +138,8 @@ signingkey
 smalltalk
 src
 srv
+stderr
+stdout
 struct
 structs
 stylesheet
@@ -140,6 +148,7 @@ sublicense
 sudo
 svg
 terminfo
+tmux
 toml
 toolset
 treemacs
@@ -148,9 +157,11 @@ ts
 tsc
 tsconfig
 tsx
+tuis
 turbopack
 ufw
 uis
+unfill
 untracked
 usr
 utf
@@ -164,5 +175,7 @@ webdevelopment
 websocket
 websockets
 whitespace
+wl
+xclip
 xcode
 zsh
