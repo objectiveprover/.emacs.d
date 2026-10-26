@@ -848,7 +848,8 @@ of recomputed on every mode-line redisplay."
   (setopt treesit-language-source-alist
           '((go    "https://github.com/tree-sitter/tree-sitter-go")
             (gomod "https://github.com/camdencheek/tree-sitter-go-mod")
-            (astro "https://github.com/virchau13/tree-sitter-astro"))))
+            (astro "https://github.com/virchau13/tree-sitter-astro")
+            (rust "https://github.com/tree-sitter/tree-sitter-rust" "v0.23.0"))))
 
 (use-feature eglot
   :custom
@@ -865,7 +866,11 @@ of recomputed on every mode-line redisplay."
   (add-to-list 'eglot-server-programs
                '(astro-ts-mode . ("astro-ls" "--stdio"
                                   :initializationOptions
-                                  (:typescript (:tsdk "./node_modules/typescript/lib"))))))
+                                  (:typescript (:tsdk "./node_modules/typescript/lib")))))
+  (add-to-list 'eglot-server-programs
+               '(rust-ts-mode . ("rust-analyzer"
+                                 :initializationOptions
+                                 (:check (:command "clippy"))))))
 
 ;; Report Eglot diagnostics through Flycheck
 (use-package flycheck-eglot
@@ -967,5 +972,12 @@ of recomputed on every mode-line redisplay."
   :hook
   ((go-ts-mode . eglot-ensure)
    (go-ts-mode . (lambda () (setq-local tab-width 4)))))
+
+;; --------------------------------------------------------------------------------
+;; Rust
+
+(use-feature rust-ts-mode
+  :mode "\\.rs\\'"
+  :hook ((rust-ts-mode . eglot-ensure)))
 
 ;;; init.el ends here

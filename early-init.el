@@ -26,6 +26,12 @@
                          (car (process-lines "sw_vers" "-productVersion")))))
     (setenv "MACOSX_DEPLOYMENT_TARGET" version)))
 
+;; Make cargo binaries available
+(when (eq system-type 'darwin)
+  (let ((cargo-bin (expand-file-name "~/.cargo/bin")))
+    (add-to-list 'exec-path cargo-bin)
+    (setenv "PATH" (concat cargo-bin ":" (getenv "PATH")))))
+
 ;; --------------------------------------------------
 ;; Frame
 

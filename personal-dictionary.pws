@@ -1,4 +1,4 @@
-personal_ws-1.1 en 180 
+personal_ws-1.1 en 192 
 alh
 alist
 astro
@@ -20,10 +20,14 @@ charset
 checkdoc
 chez
 chmod
+clippy
 cmi
 cmx
+colour
+colours
 concat
 config
+const
 copywriting
 cpp
 crossorigin
@@ -77,6 +81,7 @@ iedit
 imenu
 img
 init
+ish
 jaiheravi
 jetbrains
 jetbrainsmono
@@ -85,6 +90,7 @@ json
 keymap
 keyset
 lf
+libgccjit
 linter
 localhost
 localsend
@@ -97,6 +103,7 @@ makefile
 mdns
 melpa
 minibuffer
+miscomputing
 modeline
 nav
 neuralink
@@ -123,12 +130,15 @@ powerline
 preload
 prepended
 prev
+productversion
 prolog
 pws
 quasiquote
 rebase
 redisplay
+renderers
 repos
+rs
 runghc
 setq
 sexp
@@ -145,6 +155,7 @@ structs
 stylesheet
 stylesheets
 sublicense
+subprocesses
 sudo
 svg
 terminfo
@@ -166,6 +177,7 @@ untracked
 usr
 utf
 utop
+vers
 vertico
 viewport
 vundo
