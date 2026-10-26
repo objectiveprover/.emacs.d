@@ -139,8 +139,8 @@
 (defconst Minimalist/fg-ghost     Minimalist/base-150    "Barely visible syntax: parentheses.")
 
 ;; Tokens: surfaces
-(defconst Minimalist/bg           Minimalist/paper    "Buffer background.")
-(defconst Minimalist/bg-surface   Minimalist/base-50  "Raised surfaces: the mode line.")
+(defconst Minimalist/bg           "#FFFFFF"           "Buffer background.")
+(defconst Minimalist/bg-surface   "#F0F0F0"           "Raised surfaces: the mode line.")
 (defconst Minimalist/bg-selection Minimalist/base-150 "Region, search matches and highlights.")
 
 ;; Tokens: markers and states
@@ -766,9 +766,14 @@ of recomputed on every mode-line redisplay."
 (set-face-attribute 'font-lock-variable-name-face nil
                     :foreground Minimalist/fg
                     :slant 'italic)
+
 (set-face-attribute 'font-lock-comment-face nil
                     :foreground Minimalist/fg-comment
                     :slant 'italic)
+(set-face-attribute 'font-lock-doc-face nil
+                    :foreground Minimalist/fg-comment
+                    :slant 'italic)
+
 (set-face-attribute 'font-lock-string-face nil
                     :foreground Minimalist/fg-string
                     :slant 'italic)
