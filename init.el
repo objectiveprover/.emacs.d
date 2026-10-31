@@ -141,7 +141,7 @@
 ;; Tokens: surfaces
 (defconst Minimalist/bg           "#FFFFFF"           "Buffer background.")
 (defconst Minimalist/bg-surface   "#F0F0F0"           "Raised surfaces: the mode line.")
-(defconst Minimalist/bg-selection Minimalist/base-150 "Region, search matches and highlights.")
+(defconst Minimalist/bg-selection Minimalist/base-50 "Region, search matches and highlights.")
 
 ;; Tokens: markers and states
 (defconst Minimalist/marker       Minimalist/base-300  "Whitespace, iedit, saved dot.")
@@ -504,6 +504,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
   (git-gutter:added-sign "\uf067")
   (git-gutter:deleted-sign "\uf068")
   :config
+  (add-hook 'magit-post-refresh-hook #'git-gutter:update-all-windows)
   (dolist (face '(git-gutter:modified git-gutter:added git-gutter:deleted))
     (set-face-attribute face nil :foreground Minimalist/fg-faint :weight 'normal)))
 
