@@ -1,4 +1,4 @@
-personal_ws-1.1 en 192 
+personal_ws-1.1 en 198 
 alh
 alist
 astro
@@ -21,6 +21,7 @@ checkdoc
 chez
 chmod
 clippy
+clj
 cmi
 cmx
 colour
@@ -77,6 +78,7 @@ homebrew
 homelab
 href
 https
+hyprland
 iedit
 imenu
 img
@@ -140,6 +142,7 @@ renderers
 repos
 rs
 runghc
+scpi
 setq
 sexp
 siglent
@@ -158,6 +161,9 @@ sublicense
 subprocesses
 sudo
 svg
+tcl
+tcp
+templating
 terminfo
 tmux
 toml
