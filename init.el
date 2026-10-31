@@ -302,10 +302,6 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
         electric-pair-delete-adjacent-pairs t)
 (electric-pair-mode)
 
-;; Hard-wrap comments, and only comments, in code
-(setopt comment-auto-fill-only-comments t)
-(add-hook 'prog-mode-hook #'auto-fill-mode)
-
 ;; Select and edit multiple things at the same time
 (use-package multiple-cursors
   :bind (("C-c m f" . mc/mark-next-like-this)
@@ -438,8 +434,9 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
   (flycheck-emacs-lisp-load-path 'inherit)
   (flycheck-global-modes '(not lisp-interaction-mode markdown-ts-mode))
   (flycheck-indication-mode 'left-fringe)
+  (flycheck-idle-change-delay 2.0)
+  (flycheck-display-errors-delay 1.5)
   :config
-  ;; (normal . hi-res) bitmaps, defined in the fringe section
   (dolist (level '(error warning info))
     (put level 'flycheck-fringe-bitmaps '(Minimalist/square . Minimalist/square)))
   (set-face-attribute 'flycheck-fringe-error nil
@@ -478,6 +475,8 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 (use-package dirvish
   :init
   (dirvish-override-dired-mode)
+  :custom
+  (dirvish-use-header-line nil)
   :bind (("C-c d" . dirvish)
          ("C-c t" . dirvish-side)))
 
@@ -541,7 +540,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
          :then #'Minimalist/plz-show
          :else (lambda (err)
                  (if-let* ((resp (plz-error-response err)))
-                     (Minimalist/plz-show resp)  ; 4xx/5xx: show the error body too
+                     (Minimalist/plz-show resp) ; 4xx/5xx: show the error body too
                    (message "Request failed: %S" (plz-error-curl-error err)))))))
 
 ;; Terminal emulator that supports TUIs
@@ -568,56 +567,6 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 
 (add-hook 'prog-mode-hook #'display-line-numbers-mode)
 (add-hook 'text-mode-hook #'display-line-numbers-mode)
-
-;; Line spacing as (TOP . BOTTOM).  Top and bottom need different values for
-;; the text to look truly centered.
-(setopt line-spacing '(0.22 . 0.12))
-
-;; Fringe
-
-(defun Minimalist/fringe-bitmap (name &rest rows)
-  "Define fringe bitmap NAME from ROWS of `X' (on) and `.' (off)."
-  (define-fringe-bitmap
-    name
-    (vconcat (mapcar (lambda (row)
-                       (seq-reduce (lambda (acc ch) (+ (* acc 2) (if (eq ch ?X) 1 0)))
-                                   row 0))
-                     rows))
-    nil (length (car rows)) 'center))
-
-(use-feature fringe
-  :config
-  (fringe-mode '(20 . 0))
-
-  (Minimalist/fringe-bitmap 'Minimalist/square
-                            "XXXXXXXXXX"
-                            "XXXXXXXXXX"
-                            "XXXXXXXXXX"
-                            "XXXXXXXXXX"
-                            "XXXXXXXXXX"
-                            "XXXXXXXXXX"
-                            "XXXXXXXXXX"
-                            "XXXXXXXXXX"
-                            "XXXXXXXXXX"
-                            "XXXXXXXXXX")
-
-  (Minimalist/fringe-bitmap 'Minimalist/wrap
-                            "X..........."
-                            "X..........."
-                            "X..........."
-                            "X..........."
-                            "X..........."
-                            "X..........."
-                            "X..........."
-                            "X..........."
-                            "XXXXXXXXXXXX")
-
-  ;; Mark wrapped lines with the custom bitmap
-  (setq-default fringe-indicator-alist
-                (cons '(continuation Minimalist/wrap nil)
-                      (assq-delete-all 'continuation
-                                       (copy-sequence
-                                        (default-value 'fringe-indicator-alist))))))
 
 ;; Mode line
 ;; The format below is fully custom, so the default mode-line-* pieces
@@ -812,13 +761,19 @@ of recomputed on every mode-line redisplay."
 ;; Text and markup
 
 ;; Width for wrapped comments and prose
-(setopt fill-column 100)
-(use-package visual-fill-column)
+;; Also applies to programming modes
+(setq-default fill-column 80)
+
+;; Soft-wrap prose at fill-column
+(use-package visual-fill-column
+  :hook ((text-mode . visual-line-mode)
+         (visual-line-mode . visual-fill-column-mode)))
+
+;; Indent wrapped continuation lines under list items
+(use-feature visual-wrap
+  :hook (text-mode . visual-wrap-prefix-mode))
 
 (use-feature org
-  :hook
-  (org-mode . visual-fill-column-mode)
-  (org-mode . visual-line-mode)
   :config
   (dolist (spec '((org-level-1 . 1.35)
                   (org-level-2 . 1.2)
@@ -829,15 +784,17 @@ of recomputed on every mode-line redisplay."
                         :weight 'semibold)))
 
 (use-feature markdown-ts-mode
-  :mode ("\\.md\\'" "\\.markdown\\'")
-  :hook
-  (markdown-ts-mode . visual-fill-column-mode))
+  :mode ("\\.md\\'" "\\.markdown\\'"))
 
 (use-feature json-ts-mode
   :mode ("\\.json\\'"))
 
 ;; --------------------------------------------------------------------------------
 ;; General programming
+
+;; Hard-wrap comments, and only comments, in code
+(setopt comment-auto-fill-only-comments t)
+(add-hook 'prog-mode-hook #'auto-fill-mode)
 
 ;; M-x treesit-install-language-grammar
 (use-feature treesit
@@ -979,5 +936,3 @@ of recomputed on every mode-line redisplay."
 (use-feature rust-ts-mode
   :mode "\\.rs\\'"
   :hook ((rust-ts-mode . eglot-ensure)))
-
-;;; init.el ends here
