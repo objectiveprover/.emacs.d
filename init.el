@@ -136,7 +136,7 @@
 (defconst Minimalist/fg-secondary Minimalist/base-800    "Secondary UI text: mode line, buttons.")
 (defconst Minimalist/fg-subtle    Minimalist/base-600    "Header line.")
 (defconst Minimalist/fg-faint     Minimalist/base-300    "Line numbers, fringe, Git signs.")
-(defconst Minimalist/fg-ghost     Minimalist/base-150    "Barely visible syntax: parentheses.")
+(defconst Minimalist/fg-ghost     Minimalist/base-200    "Barely visible syntax: parentheses.")
 
 ;; Tokens: surfaces
 (defconst Minimalist/bg           "#FFFFFF"           "Buffer background.")
@@ -680,7 +680,8 @@ of recomputed on every mode-line redisplay."
                     :weight 'bold)
 (set-face-foreground 'line-number Minimalist/fg-faint)
 (set-face-attribute 'line-number-current-line nil
-                    :foreground Minimalist/fg-secondary)
+                    :foreground Minimalist/fg-secondary
+                    :weight 'bold)
 (set-face-background 'region Minimalist/bg-selection)
 (set-face-attribute 'highlight nil
                     :background Minimalist/bg-selection)
@@ -820,15 +821,15 @@ of recomputed on every mode-line redisplay."
                                    :usePlaceholders t
                                    :hints (:parameterNames t :assignVariableTypes t))))
   (add-to-list 'eglot-server-programs
-               '((typescript-ts-mode tsx-ts-mode) . ("tsc" "--lsp" "--stdio")))
-  (add-to-list 'eglot-server-programs
                '(astro-ts-mode . ("astro-ls" "--stdio"
                                   :initializationOptions
                                   (:typescript (:tsdk "./node_modules/typescript/lib")))))
   (add-to-list 'eglot-server-programs
                '(rust-ts-mode . ("rust-analyzer"
                                  :initializationOptions
-                                 (:check (:command "clippy"))))))
+                                 (:check (:command "clippy")))))
+  (add-to-list 'eglot-server-programs
+               '((typescript-ts-mode tsx-ts-mode) . ("tsc" "--lsp" "--stdio"))))
 
 ;; Report Eglot diagnostics through Flycheck
 (use-package flycheck-eglot
@@ -937,3 +938,8 @@ of recomputed on every mode-line redisplay."
 (use-feature rust-ts-mode
   :mode "\\.rs\\'"
   :hook ((rust-ts-mode . eglot-ensure)))
+
+;; --------------------------------------------------------------------------------
+
+(provide 'init)
+;;; init.el ends here

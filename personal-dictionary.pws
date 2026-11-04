@@ -1,4 +1,4 @@
-personal_ws-1.1 en 199 
+personal_ws-1.1 en 202 
 alh
 alist
 astro
@@ -83,6 +83,7 @@ iedit
 imenu
 img
 init
+insertcss
 ish
 jaiheravi
 jetbrains
@@ -139,6 +140,7 @@ pws
 quasiquote
 rebase
 redisplay
+removecss
 renderers
 repos
 rs
@@ -162,6 +164,7 @@ sublicense
 subprocesses
 sudo
 svg
+tabid
 tcl
 tcp
 templating
