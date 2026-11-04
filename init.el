@@ -30,17 +30,12 @@
 (setq package-selected-packages
       '(
         aggressive-indent
-        astro-ts-mode
-        cider
         dirvish
         eat
         emmet-mode
         exec-path-from-shell
         expand-region
-        flycheck
-        flycheck-clj-kondo
-        flycheck-eglot
-        forth-mode
+        flycheckforth-mode
         geiser-chez
         git-gutter
         iedit
@@ -511,39 +506,6 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 ;; --------------------------------------------------------------------------------
 ;; Tools
 
-;; HTTP client.  `Minimalist/fetch-api' is autoloaded, so it works before plz is loaded.
-(use-package plz
-  :autoload Minimalist/fetch-api
-  :functions plz Minimalist/plz-show
-  :config
-  (defun Minimalist/plz-show (response &optional buffer-name)
-    "Display plz RESPONSE pretty-printed in BUFFER-NAME (default *HTTP Response*)."
-    (let ((buf (get-buffer-create (or buffer-name "*HTTP Response*"))))
-      (with-current-buffer buf
-        (let ((inhibit-read-only t))
-          (erase-buffer)
-          (insert (or (plz-response-body response) ""))
-          (ignore-errors (json-pretty-print-buffer)) ; leave non-JSON (e.g. HTML errors) as-is
-          (goto-char (point-min)))
-        (if (treesit-language-available-p 'json) (json-ts-mode) (js-json-mode))
-        (hs-minor-mode 1)
-        ;; set after the major mode, which resets buffer-local variables
-        (setq header-line-format (format " HTTP %d" (plz-response-status response))))
-      (display-buffer buf)))
-
-  (defun Minimalist/fetch-api (method url &optional data)
-    "Send DATA as JSON with METHOD to URL; show the response in *HTTP Response*."
-    (plz method url
-         :headers '(("Content-Type" . "application/json")
-                    ("Accept" . "application/json"))
-         :body (when data (json-encode data))
-         :as 'response
-         :then #'Minimalist/plz-show
-         :else (lambda (err)
-                 (if-let* ((resp (plz-error-response err)))
-                     (Minimalist/plz-show resp) ; 4xx/5xx: show the error body too
-                   (message "Request failed: %S" (plz-error-curl-error err)))))))
-
 ;; Terminal emulator that supports TUIs
 (use-package eat)
 
@@ -807,7 +769,6 @@ of recomputed on every mode-line redisplay."
   (setopt treesit-language-source-alist
           '((go    "https://github.com/tree-sitter/tree-sitter-go")
             (gomod "https://github.com/camdencheek/tree-sitter-go-mod")
-            (astro "https://github.com/virchau13/tree-sitter-astro")
             (rust "https://github.com/tree-sitter/tree-sitter-rust" "v0.23.0"))))
 
 (use-feature eglot
@@ -821,15 +782,9 @@ of recomputed on every mode-line redisplay."
                                    :usePlaceholders t
                                    :hints (:parameterNames t :assignVariableTypes t))))
   (add-to-list 'eglot-server-programs
-               '(astro-ts-mode . ("astro-ls" "--stdio"
-                                  :initializationOptions
-                                  (:typescript (:tsdk "./node_modules/typescript/lib")))))
-  (add-to-list 'eglot-server-programs
                '(rust-ts-mode . ("rust-analyzer"
                                  :initializationOptions
-                                 (:check (:command "clippy")))))
-  (add-to-list 'eglot-server-programs
-               '((typescript-ts-mode tsx-ts-mode) . ("tsc" "--lsp" "--stdio"))))
+                                 (:check (:command "clippy")))))  )
 
 ;; Report Eglot diagnostics through Flycheck
 (use-package flycheck-eglot
@@ -872,12 +827,6 @@ of recomputed on every mode-line redisplay."
   :custom
   (geiser-chez-binary "chez"))
 
-;; Clojure
-(use-package flycheck-clj-kondo)
-(use-package cider
-  :config
-  (require 'flycheck-clj-kondo))
-
 ;; --------------------------------------------------------------------------------
 ;; Forth (GForth)
 
@@ -887,38 +836,6 @@ of recomputed on every mode-line redisplay."
   :config
   (require 'forth-block-mode)
   (require 'forth-interaction-mode))
-
-;; --------------------------------------------------------------------------------
-;; Web
-
-(use-package emmet-mode
-  :hook ((mhtml-ts-mode astro-ts-mode) . emmet-mode))
-
-(use-feature mhtml-ts-mode
-  :custom
-  (mhtml-ts-mode-css-fontify-colors nil))
-
-(use-feature css-ts-mode
-  :custom
-  (css-fontify-colors nil))
-
-(use-feature typescript-ts-mode
-  :hook (typescript-ts-mode . eglot-ensure))
-
-(use-package astro-ts-mode
-  :mode "\\.astro\\'"
-  :hook (astro-ts-mode . eglot-ensure)
-  :config
-  (require 'typescript-ts-mode)
-  ;; Astro embeds these languages.  astro-ts-mode doesn't install missing
-  ;; grammars itself, so do it here following `treesit-auto-install-grammar'.
-  (dolist (lang '(astro css typescript tsx))
-    (unless (treesit-language-available-p lang)
-      (when (pcase treesit-auto-install-grammar
-              ('never nil)
-              ('ask (y-or-n-p (format "Install the tree-sitter grammar for %s? " lang)))
-              (_ t))
-        (treesit-install-language-grammar lang)))))
 
 ;; --------------------------------------------------------------------------------
 ;; Go
