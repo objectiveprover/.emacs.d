@@ -45,7 +45,6 @@
         orderless
         paredit
         paren-face
-        plz
         rainbow-mode
         spell-fu
         vertico
@@ -392,22 +391,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
                   font-lock-variable-use-face
                   font-lock-builtin-face
                   font-lock-constant-face
-                  font-lock-type-face
-                  ;; Eglot semantic tokens: types (comment and string stay checked)
-                  eglot-semantic-namespace eglot-semantic-type eglot-semantic-class
-                  eglot-semantic-enum eglot-semantic-interface eglot-semantic-struct
-                  eglot-semantic-typeParameter eglot-semantic-parameter
-                  eglot-semantic-variable eglot-semantic-property
-                  eglot-semantic-enumMember eglot-semantic-event
-                  eglot-semantic-function eglot-semantic-method eglot-semantic-macro
-                  eglot-semantic-keyword eglot-semantic-modifier eglot-semantic-number
-                  eglot-semantic-regexp eglot-semantic-operator eglot-semantic-decorator
-                  ;; Eglot semantic tokens: modifiers (documentation stays checked)
-                  eglot-semantic-declaration eglot-semantic-definition
-                  eglot-semantic-readonly eglot-semantic-static
-                  eglot-semantic-deprecated eglot-semantic-abstract
-                  eglot-semantic-async eglot-semantic-modification
-                  eglot-semantic-defaultLibrary))
+                  font-lock-type-face))
   ;; There are lots of technical words that we don't want flagged as typos,
   ;; so they go in a local custom dictionary.
   (defun Minimalist/spell-fu-add-personal-dict ()
@@ -760,39 +744,6 @@ of recomputed on every mode-line redisplay."
 (setopt comment-auto-fill-only-comments t)
 (add-hook 'prog-mode-hook #'auto-fill-mode)
 
-;; M-x treesit-install-language-grammar
-(use-feature treesit
-  :custom
-  (treesit-enabled-modes '(mhtml-ts-mode css-ts-mode js-ts-mode))
-  (treesit-auto-install-grammar 'ask)
-  :config
-  (setopt treesit-language-source-alist
-          '((go    "https://github.com/tree-sitter/tree-sitter-go")
-            (gomod "https://github.com/camdencheek/tree-sitter-go-mod")
-            (rust "https://github.com/tree-sitter/tree-sitter-rust" "v0.23.0"))))
-
-(use-feature eglot
-  :custom
-  (eglot-autoshutdown t)
-  (eglot-events-buffer-config '(:size 0)) ; drop JSON-RPC logging, noticeably faster
-  :config
-  (setq-default eglot-workspace-configuration
-                '(:gopls (:gofumpt t
-                                   :staticcheck t
-                                   :usePlaceholders t
-                                   :hints (:parameterNames t :assignVariableTypes t))))
-  (add-to-list 'eglot-server-programs
-               '(rust-ts-mode . ("rust-analyzer"
-                                 :initializationOptions
-                                 (:check (:command "clippy")))))  )
-
-;; Report Eglot diagnostics through Flycheck
-(use-package flycheck-eglot
-  :after (flycheck eglot)
-  :demand t
-  :config
-  (global-flycheck-eglot-mode 1))
-
 ;; Show color strings in their color
 (use-package rainbow-mode
   :hook ((css-ts-mode emacs-lisp-mode) . rainbow-mode)
@@ -836,25 +787,6 @@ of recomputed on every mode-line redisplay."
   :config
   (require 'forth-block-mode)
   (require 'forth-interaction-mode))
-
-;; --------------------------------------------------------------------------------
-;; Go
-
-(use-feature go-ts-mode
-  :mode (("\\.go\\'"     . go-ts-mode)
-         ("/go\\.mod\\'" . go-mod-ts-mode))
-  :custom
-  (go-ts-indent-offset 4)
-  :hook
-  ((go-ts-mode . eglot-ensure)
-   (go-ts-mode . (lambda () (setq-local tab-width 4)))))
-
-;; --------------------------------------------------------------------------------
-;; Rust
-
-(use-feature rust-ts-mode
-  :mode "\\.rs\\'"
-  :hook ((rust-ts-mode . eglot-ensure)))
 
 ;; --------------------------------------------------------------------------------
 
