@@ -2,10 +2,22 @@
 
 ;;; Commentary:
 ;; Emacs loads this before the package system and before drawing the first
-;; frame, so it holds what must be in effect before either: the environment
-;; for native compilation, and which UI elements the frame has.
+;; frame, so it holds what must be in effect before either: turning off the
+;; package system, the environment for native compilation, and which UI
+;; elements the frame has.
 
 ;;; Code:
+
+;; --------------------------------------------------
+;; Packages
+
+;; No package.el: packages are git submodules in site-lisp/, loaded by
+;; init.el.  This also keeps Emacs from activating anything left in elpa/.
+(setq package-enable-at-startup nil)
+
+;; After a `git pull' in site-lisp/ without a rebuild, load the newer .el
+;; instead of the stale .elc next to it
+(setq load-prefer-newer t)
 
 ;; --------------------------------------------------
 ;; Native compilation

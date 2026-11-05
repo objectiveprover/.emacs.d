@@ -23,4 +23,3 @@ eln-cache
 .yas-compiled-snippets.*
 flycheck_init.el
 projects.eld
-dirvish

@@ -13,53 +13,24 @@
 ;; --------------------------------------------------------------------------------
 ;; Packages
 
-(require 'package)
-;; TODO: I should get all the packages locally and not depend on a package manager
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+;; No package manager: package.el is off (early-init.el).  Third-party
+;; packages are git submodules in site-lisp/, so every install and update is
+;; an intentional commit.  site-lisp/site-lisp.el explains how to add,
+;; update and build them.
+(load (expand-file-name "site-lisp/site-lisp" user-emacs-directory) nil t)
+(declare-function Minimalist/site-lisp-activate "site-lisp/site-lisp")
+(Minimalist/site-lisp-activate)
+
+;; Single files with no git repository to follow live in lisp/.  Update them
+;; by copying in a newer file by hand.
+(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
 
 ;; Don't load packages at startup so Emacs starts faster.  A package only loads
 ;; through :demand, :init, :hook, :bind, :mode, :autoload or similar.
 (setopt use-package-always-defer t)
 
-;; This list is the only thing that installs packages: use-package doesn't
-;; fetch anything (`use-package-always-ensure' stays off).  A use-package block
-;; for a package missing from the list fails to load and shows up right away,
-;; instead of being installed silently and drifting out of the list.
-;; Only packages not bundled with Emacs.  Kept by hand instead of letting Emacs
-;; manage it, so I know what's being installed and every install is intentional.
-(setq package-selected-packages
-      '(
-        aggressive-indent
-        dirvish
-        eat
-        expand-region
-        flycheck
-        forth-mode
-        geiser-chez
-        git-gutter
-        iedit
-        magit
-        marginalia
-        multiple-cursors
-        orderless
-        paredit
-        paren-face
-        rainbow-mode
-        spell-fu
-        vertico
-        visual-fill-column
-        vundo
-        ws-butler
-        yasnippet
-        ))
-
-;; On a machine missing some of them, offer to install them
-(unless (seq-every-p #'package-installed-p package-selected-packages)
-  (package-refresh-contents)
-  (package-install-selected-packages))
-
-;; Make it obvious which packages come from an archive: `use-package' is for
-;; archives and `use-feature' for built-in and local libraries.
+;; Make it obvious where a package comes from: `use-package' is for the
+;; submodules in site-lisp/ and `use-feature' for built-in and lisp/ libraries.
 ;; Both take the library name, not the package name (see `locate-library').
 (defmacro use-feature (name &rest args)
   "Alias for `use-package NAME :ensure nil ... ARGS'."
@@ -73,7 +44,7 @@
 ;; - Palette: literal colors, named by what they look like.  Only tokens use them.
 ;; - Tokens: what a color is for.  The rest of the config uses only tokens, so
 ;;   restyling means remapping a token instead of hunting for hex values.
-;; Constants rather than a lookup table so the byte compiler (and Flycheck)
+;; Constants rather than a lookup table so the byte compiler (and Flymake)
 ;; flags a misspelled name.
 
 ;; Palette: neutrals, warm grays from darkest to lightest
@@ -128,7 +99,7 @@
 (defconst Minimalist/bg-selection Minimalist/base-50 "Region, search matches and highlights.")
 
 ;; Tokens: markers and states
-(defconst Minimalist/marker       Minimalist/base-300  "Whitespace, iedit, saved dot.")
+(defconst Minimalist/marker       Minimalist/base-300  "Whitespace, saved dot.")
 (defconst Minimalist/modified     Minimalist/green-600 "Unsaved-changes dot.")
 (defconst Minimalist/read-only    Minimalist/black     "Read-only dot.")
 (defconst Minimalist/accent       Minimalist/blue-600  "Directories.")
@@ -159,7 +130,7 @@
 
 ;; Remove trailing whitespace on save, but only from lines I edited, so files
 ;; in shared repositories don't get unrelated whitespace changes
-(use-package ws-butler
+(use-feature ws-butler
   :hook ((prog-mode text-mode) . ws-butler-mode))
 
 ;; Keep buffers in sync with changes on disk, directories included
@@ -169,7 +140,7 @@
 ;; Track recently opened files (C-x C-r)
 (recentf-mode 1)
 
-;; Persist minibuffer history over restarts; Vertico sorts by it
+;; Persist minibuffer history over restarts; completion sorts by it
 (use-feature savehist
   :init
   (savehist-mode))
@@ -290,16 +261,25 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
          ("C-c m b" . mc/mark-previous-like-this)
          ("C-c m a" . mc/mark-all-like-this)))
 
-;; Increase selection in a semantic way
-(use-package expand-region
-  :bind ("C-c SPC" . er/expand-region))
+;; Increase selection in a semantic way: C-c SPC, then SPC to grow it
+;; further and - to shrink it.  Uses tree-sitter in -ts- modes.
+(declare-function expreg-contract "expreg")
+(declare-function expreg--sentence "expreg")
+(defvar-keymap Minimalist/expreg-repeat-map
+  :doc "Keep growing or shrinking the selection after `expreg-expand'."
+  :repeat t
+  "SPC" #'expreg-expand
+  "-" #'expreg-contract)
 
-;; Simultaneous editing of occurrences.
-;; To limit which occurrences are edited, narrow first (C-x n n).
-(use-package iedit
-  :bind ("C-c i" . iedit-mode)
-  :config
-  (set-face-background 'iedit-occurrence Minimalist/marker))
+(defvar expreg-functions)
+(defun Minimalist/expreg-add-sentences ()
+  "Also select by sentence, for prose."
+  (require 'expreg)
+  (setq-local expreg-functions (cons #'expreg--sentence expreg-functions)))
+
+(use-package expreg
+  :bind ("C-c SPC" . expreg-expand)
+  :hook (text-mode . Minimalist/expreg-add-sentences))
 
 ;; Display the undo tree, in place of the default `undo' key
 (use-package vundo
@@ -315,6 +295,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 
 ;; Quickly insert bits of code
 (use-package yasnippet
+  :functions yas-global-mode
   :custom
   (yas-snippet-dirs (list (expand-file-name "snippets" user-emacs-directory)))
   :init
@@ -324,21 +305,34 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 ;; Completion
 
 ;; Vertical minibuffer completion (M-x, find-file...)
-(use-package vertico
-  :init
-  (vertico-mode))
-
-;; Descriptions next to the candidates
-(use-package marginalia
-  :init
-  (marginalia-mode))
-
-;; Find functions, variables, etc. without being precise in the spelling
-(use-package orderless
+;; RET picks the highlighted candidate and M-RET submits what was typed,
+;; e.g. a new file name.  TAB inserts the candidate, e.g. to enter a directory.
+(use-feature icomplete
   :custom
-  (completion-styles '(orderless basic))
-  (completion-category-overrides '((file (styles partial-completion))))
-  (completion-pcm-leading-wildcard t))
+  (icomplete-show-matches-on-no-input t)
+  (icomplete-compute-delay 0)
+  (icomplete-prospects-height 12)
+  (icomplete-vertical-render-prefix-indicator t)
+  :bind (:map icomplete-minibuffer-map
+              ("RET" . icomplete-force-complete-and-exit)
+              ("M-RET" . exit-minibuffer))
+  :init
+  (icomplete-vertical-mode))
+
+;; Descriptions next to the candidates, e.g. for describe-function
+(setopt completions-detailed t)
+
+;; Find functions, variables, etc. without being precise in the spelling.
+;; partial-completion matches each word anywhere in the candidate, in order.
+;; Separate words with - or *, not a space: "kill-buf" and "k*buf" match
+;; kill-buffer, "kill buf" and "buf-kill" don't.  flex is the fallback for
+;; typos and abbreviations.
+(setopt completion-styles '(partial-completion flex basic)
+        completion-category-overrides '((file (styles partial-completion)))
+        completion-pcm-leading-wildcard t
+        completion-ignore-case t
+        read-buffer-completion-ignore-case t
+        read-file-name-completion-ignore-case t)
 
 ;; Auto-completion for code and text
 (use-feature completion-preview
@@ -365,82 +359,137 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 
 ;; Spell check for natural languages
 ;; Requires Aspell and the English dictionary ("en_US")
-(declare-function spell-fu-dictionary-add "spell-fu")
-(declare-function spell-fu-get-ispell-dictionary "spell-fu")
-(declare-function spell-fu-get-personal-dictionary "spell-fu")
+(use-feature ispell
+  :custom
+  (ispell-program-name "aspell")
+  (ispell-dictionary "en_US")
+  ;; UTF-8 instead of the dictionary's default Latin-1, so words like
+  ;; "hernández" in the personal dictionary are read correctly
+  (ispell-local-dictionary-alist
+   '(("en_US" "[[:alpha:]]" "[^[:alpha:]]" "['’]" t ("-d" "en_US") nil utf-8)))
+  ;; There are lots of technical words that we don't want flagged as typos,
+  ;; so they go in a local custom dictionary.
+  (ispell-personal-dictionary
+   (expand-file-name "personal-dictionary.pws" user-emacs-directory)))
 
-;; There are lots of technical words that we don't want flagged as typos,
-;; so they go in a local custom dictionary.
-(defun Minimalist/spell-fu-add-personal-dict ()
-  "Add the en_US and personal dictionaries to the current buffer."
-  (spell-fu-dictionary-add
-   (spell-fu-get-ispell-dictionary "en_US"))
-  (spell-fu-dictionary-add
-   (spell-fu-get-personal-dictionary
-    "en-personal"
-    (expand-file-name "personal-dictionary.pws" user-emacs-directory))))
+;; Prose is checked everywhere; code only in comments and strings.
+;; Words are checked as they're typed or the cursor passes them, so typos
+;; already in a file show up only after M-x flyspell-buffer.
+(defun Minimalist/flyspell-prog-maybe ()
+  "Enable `flyspell-prog-mode', except in JSON."
+  (unless (derived-mode-p 'json-ts-mode)
+    (flyspell-prog-mode)))
 
-(use-package spell-fu
-  :demand t
-  :config
-  (setq-default spell-fu-ignore-modes '(dired-mode json-ts-mode))
-  (setq-default spell-fu-faces-exclude
-                '(font-lock-keyword-face
-                  font-lock-function-name-face
-                  font-lock-variable-name-face
-                  font-lock-variable-use-face
-                  font-lock-builtin-face
-                  font-lock-constant-face
-                  font-lock-type-face))
-  (add-hook 'spell-fu-mode-hook #'Minimalist/spell-fu-add-personal-dict)
-  ;; Enable last, so buffers that exist already also get the hook
-  (spell-fu-global-mode))
+(use-feature flyspell
+  :hook ((text-mode . flyspell-mode)
+         (prog-mode . Minimalist/flyspell-prog-maybe))
+  :custom
+  (flyspell-delay-use-timer t)
+  (flyspell-issue-message-flag nil)
+  (flyspell-issue-welcome-flag nil)
+  ;; Keep M-TAB for `completion-at-point'
+  (flyspell-use-meta-tab nil))
 
 ;; Code checking
-(use-package flycheck
-  :demand t
+;; Only Emacs Lisp: it's the only mode here with a built-in Flymake backend
+;; whose tools are installed.  The scratch buffer is left out.
+(defun Minimalist/flymake-maybe-enable ()
+  "Enable `flymake-mode', except in `lisp-interaction-mode'."
+  (unless (derived-mode-p 'lisp-interaction-mode)
+    (flymake-mode)))
+
+(use-feature flymake
+  :hook (emacs-lisp-mode . Minimalist/flymake-maybe-enable)
   :custom
-  (flycheck-emacs-lisp-load-path 'inherit)
-  (flycheck-global-modes '(not lisp-interaction-mode markdown-ts-mode scheme-mode inferior-scheme-mode))
-  (flycheck-idle-change-delay 2.0)
-  (flycheck-display-errors-delay 1.5)
+  (flymake-no-changes-timeout 2.0)
   :config
-  (set-face-attribute 'flycheck-warning nil
-                      :foreground Minimalist/warning-text :weight 'normal)
-  (setq flycheck-mode-line
-        '(:eval (pcase flycheck-last-status-change
-                  (`finished
-                   (let ((counts (flycheck-count-errors flycheck-current-errors)))
-                     (propertize (format " %d:E  %d:W  %d:I "
-                                         (alist-get 'error counts 0)
-                                         (alist-get 'warning counts 0)
-                                         (alist-get 'info counts 0))
-                                 'face `(:foreground ,Minimalist/fg-secondary))))
-                  (`running
-                   (propertize " 󰔟:E  󰔟:W  󰔟:I "
-                               'face `(:foreground ,Minimalist/fg-secondary)))
-                  (`no-checker nil)
-                  (`not-checked nil)
-                  (`errored " Flycheck:error")
-                  (`interrupted " Flycheck:stopped"))))
-  (global-flycheck-mode))
+  (set-face-attribute 'flymake-warning nil
+                      :foreground Minimalist/warning-text :weight 'normal))
+
+;; The Elisp byte-compile check only runs in trusted files, and needs this
+;; session's `load-path' to find installed packages.
+(setopt trusted-content '("~/.emacs.d/"))
+(use-feature elisp-mode
+  :custom
+  (elisp-flymake-byte-compile-load-path (cons "./" load-path)))
+
+(declare-function flymake-running-backends "flymake")
+(declare-function flymake-reporting-backends "flymake")
+(defun Minimalist/flymake-mode-line ()
+  "Error, warning and note counts for the mode line, or nil without Flymake."
+  (when (and (bound-and-true-p flymake-mode) (flymake-running-backends))
+    (propertize
+     (if (seq-difference (flymake-running-backends) (flymake-reporting-backends))
+         " 󰔟:E  󰔟:W  󰔟:I "
+       (let ((counts (list (cons :error 0) (cons :warning 0) (cons :note 0))))
+         (dolist (diag (flymake-diagnostics))
+           (when-let* ((cell (assq (flymake-diagnostic-type diag) counts)))
+             (setcdr cell (1+ (cdr cell)))))
+         (format " %d:E  %d:W  %d:I "
+                 (alist-get :error counts)
+                 (alist-get :warning counts)
+                 (alist-get :note counts))))
+     'face `(:foreground ,Minimalist/fg-secondary))))
 
 ;; --------------------------------------------------------------------------------
 ;; Files and version control
 
 ;; File manager
-(use-package dirvish
-  :init
-  (dirvish-override-dired-mode)
-  :custom
-  (dirvish-use-header-line nil)
-  :bind (("C-c d" . dirvish)
-         ("C-c t" . dirvish-side)))
+;; C-c d opens the current file's directory, C-c t toggles a side panel with
+;; the project (or current directory).  In the panel, RET on a file opens it
+;; in the main window; directories open in the panel.
+(defun Minimalist/dired-side-window ()
+  "The Dired side panel's window in this frame, or nil."
+  (seq-find (lambda (w) (window-parameter w 'Minimalist/dired-side))
+            (window-list)))
+
+(defun Minimalist/dired-side-toggle ()
+  "Toggle a Dired side panel for the current project or directory."
+  (interactive)
+  (if-let* ((win (Minimalist/dired-side-window)))
+      (delete-window win)
+    (let* ((file buffer-file-name)
+           (proj (project-current))
+           (dir (if proj (project-root proj) default-directory))
+           (win (display-buffer-in-side-window
+                 (dired-noselect dir)
+                 '((side . left)
+                   (slot . 0)
+                   (window-width . 35)
+                   (preserve-size . (t . nil))
+                   (window-parameters . ((no-delete-other-windows . t)
+                                         (Minimalist/dired-side . t)))))))
+      (select-window win)
+      (when file
+        (dired-goto-file file)))))
+
+(declare-function dired-goto-file "dired")
+(declare-function dired-get-file-for-visit "dired")
+(declare-function dired-find-file "dired")
+(defun Minimalist/dired-find-file ()
+  "Like `dired-find-file', but files from the side panel open in the main window."
+  (interactive)
+  (let ((file (dired-get-file-for-visit)))
+    (if (and (window-parameter nil 'Minimalist/dired-side)
+             (not (file-directory-p file)))
+        (progn
+          (select-window (or (get-mru-window nil nil t) (window-main-window)))
+          (find-file file))
+      (dired-find-file))))
 
 (use-feature dired
   :custom
   (dired-listing-switches "-alh")
   (dired-dwim-target t)
+  ;; macOS ls has no --dired option
+  (dired-use-ls-dired nil)
+  ;; Moving to another directory replaces the Dired buffer instead of
+  ;; leaving one behind for every directory visited
+  (dired-kill-when-opening-new-dired-buffer t)
+  :bind (("C-c d" . dired-jump)
+         ("C-c t" . Minimalist/dired-side-toggle)
+         :map dired-mode-map
+         ("RET" . Minimalist/dired-find-file))
   :config
   (set-face-foreground 'dired-directory Minimalist/accent))
 
@@ -574,7 +623,7 @@ of recomputed on every mode-line redisplay."
                 mode-name
                 (vc-mode ("" Minimalist/mode-line-gap vc-mode))
                 Minimalist/mode-line-gap
-                flycheck-mode-line))
+                (:eval (Minimalist/flymake-mode-line))))
 
 ;; Faces
 
@@ -617,9 +666,6 @@ of recomputed on every mode-line redisplay."
 (set-face-attribute 'minibuffer-prompt nil
                     :foreground Minimalist/fg
                     :weight 'normal)
-;; Only :background sets the cursor color (GUI only; terminals draw their own)
-(set-face-attribute 'cursor nil
-                    :background Minimalist/fg)
 (set-face-attribute 'error nil
                     :foreground Minimalist/error
                     :underline `(:style wave :color ,Minimalist/error)
@@ -663,14 +709,16 @@ of recomputed on every mode-line redisplay."
   (set-face-attribute face nil :foreground Minimalist/fg))
 
 ;; Dim parentheses in code
-(use-package paren-face
-  :hook (prog-mode . paren-face-mode)
-  :custom
-  (paren-face-regexp "[][()}{]")
-  :config
-  (set-face-attribute 'parenthesis nil
-                      :foreground Minimalist/fg-ghost
-                      :weight 'normal))
+(defface Minimalist/parenthesis
+  `((t :foreground ,Minimalist/fg-ghost :weight normal))
+  "Face for parentheses, brackets and braces in code."
+  :group 'faces)
+
+(defun Minimalist/dim-parentheses ()
+  "Show parentheses, brackets and braces in `Minimalist/parenthesis'."
+  (font-lock-add-keywords nil '(("[][(){}]" 0 'Minimalist/parenthesis))))
+
+(add-hook 'prog-mode-hook #'Minimalist/dim-parentheses)
 
 ;; Whitespace indicators (M-x whitespace-mode)
 (use-feature whitespace
@@ -720,11 +768,22 @@ of recomputed on every mode-line redisplay."
 (setopt comment-auto-fill-only-comments t)
 (add-hook 'prog-mode-hook #'auto-fill-mode)
 
-;; Show color strings in their color
-(use-package rainbow-mode
-  :hook (emacs-lisp-mode . rainbow-mode)
-  :custom
-  (rainbow-x-colors nil))
+;; Show hex colors like "#RRGGBB" in their color, with black or white text
+;; depending on which is readable on it
+(defun Minimalist/hex-color-face ()
+  "Face for the hex color matched by font-lock."
+  (let ((color (match-string-no-properties 0)))
+    `(:background ,color
+      :foreground ,(if (color-dark-p (color-name-to-rgb color)) "white" "black"))))
+
+(defun Minimalist/show-hex-colors ()
+  "Show hex colors in the current buffer in their color."
+  (font-lock-add-keywords
+   nil '(("#\\(?:[[:xdigit:]]\\{3\\}\\)\\{1,4\\}\\b"
+          0 (Minimalist/hex-color-face) t))
+   'append))
+
+(add-hook 'emacs-lisp-mode-hook #'Minimalist/show-hex-colors)
 
 ;; --------------------------------------------------------------------------------
 ;; Lisps

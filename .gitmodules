@@ -1,0 +1,64 @@
+[submodule "site-lisp/aggressive-indent"]
+	path = site-lisp/aggressive-indent
+	url = https://github.com/Malabarba/aggressive-indent-mode
+	ignore = untracked
+[submodule "site-lisp/cond-let"]
+	path = site-lisp/cond-let
+	url = https://github.com/tarsius/cond-let
+	ignore = untracked
+[submodule "site-lisp/eat"]
+	path = site-lisp/eat
+	url = https://codeberg.org/akib/emacs-eat
+	ignore = untracked
+[submodule "site-lisp/expreg"]
+	path = site-lisp/expreg
+	url = https://github.com/casouri/expreg
+	ignore = untracked
+[submodule "site-lisp/forth-mode"]
+	path = site-lisp/forth-mode
+	url = https://github.com/larsbrinkhoff/forth-mode
+	ignore = untracked
+[submodule "site-lisp/geiser"]
+	path = site-lisp/geiser
+	url = https://gitlab.com/emacs-geiser/geiser.git
+	ignore = untracked
+[submodule "site-lisp/geiser-chez"]
+	path = site-lisp/geiser-chez
+	url = https://gitlab.com/emacs-geiser/chez.git
+	ignore = untracked
+[submodule "site-lisp/git-gutter"]
+	path = site-lisp/git-gutter
+	url = https://github.com/emacsorphanage/git-gutter
+	ignore = untracked
+[submodule "site-lisp/llama"]
+	path = site-lisp/llama
+	url = https://github.com/tarsius/llama
+	ignore = untracked
+[submodule "site-lisp/magit"]
+	path = site-lisp/magit
+	url = https://github.com/magit/magit
+	ignore = untracked
+[submodule "site-lisp/multiple-cursors"]
+	path = site-lisp/multiple-cursors
+	url = https://github.com/magnars/multiple-cursors.el
+	ignore = untracked
+[submodule "site-lisp/paredit"]
+	path = site-lisp/paredit
+	url = https://paredit.org/paredit.git
+	ignore = untracked
+[submodule "site-lisp/visual-fill-column"]
+	path = site-lisp/visual-fill-column
+	url = https://codeberg.org/joostkremers/visual-fill-column
+	ignore = untracked
+[submodule "site-lisp/vundo"]
+	path = site-lisp/vundo
+	url = https://github.com/casouri/vundo
+	ignore = untracked
+[submodule "site-lisp/with-editor"]
+	path = site-lisp/with-editor
+	url = https://github.com/magit/with-editor
+	ignore = untracked
+[submodule "site-lisp/yasnippet"]
+	path = site-lisp/yasnippet
+	url = https://github.com/joaotavora/yasnippet
+	ignore = untracked
