@@ -11,11 +11,11 @@
 ;; --------------------------------------------------
 ;; Packages
 
-;; No package.el: packages are git submodules in site-lisp/, loaded by
-;; init.el.  This also keeps Emacs from activating anything left in elpa/.
+;; No package.el: packages live in site-lisp/, loaded by init.el.  This also
+;; keeps Emacs from activating anything left in elpa/.
 (setq package-enable-at-startup nil)
 
-;; After a `git pull' in site-lisp/ without a rebuild, load the newer .el
+;; After editing a file in site-lisp/ without a rebuild, load the newer .el
 ;; instead of the stale .elc next to it
 (setq load-prefer-newer t)
 

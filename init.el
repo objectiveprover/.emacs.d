@@ -14,23 +14,19 @@
 ;; Packages
 
 ;; No package manager: package.el is off (early-init.el).  Third-party
-;; packages are git submodules in site-lisp/, so every install and update is
-;; an intentional commit.  site-lisp/site-lisp.el explains how to add,
-;; update and build them.
+;; packages are copied into site-lisp/ as part of this config, free to edit
+;; and not tied to their original repositories.  site-lisp/site-lisp.el
+;; explains how to add and build them.
 (load (expand-file-name "site-lisp/site-lisp" user-emacs-directory) nil t)
 (declare-function Minimalist/site-lisp-activate "site-lisp/site-lisp")
 (Minimalist/site-lisp-activate)
-
-;; Single files with no git repository to follow live in lisp/.  Update them
-;; by copying in a newer file by hand.
-(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
 
 ;; Don't load packages at startup so Emacs starts faster.  A package only loads
 ;; through :demand, :init, :hook, :bind, :mode, :autoload or similar.
 (setopt use-package-always-defer t)
 
 ;; Make it obvious where a package comes from: `use-package' is for the
-;; submodules in site-lisp/ and `use-feature' for built-in and lisp/ libraries.
+;; third-party packages in site-lisp/ and `use-feature' for built-in libraries.
 ;; Both take the library name, not the package name (see `locate-library').
 (defmacro use-feature (name &rest args)
   "Alias for `use-package NAME :ensure nil ... ARGS'."
@@ -130,7 +126,7 @@
 
 ;; Remove trailing whitespace on save, but only from lines I edited, so files
 ;; in shared repositories don't get unrelated whitespace changes
-(use-feature ws-butler
+(use-package ws-butler
   :hook ((prog-mode text-mode) . ws-butler-mode))
 
 ;; Keep buffers in sync with changes on disk, directories included

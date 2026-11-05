@@ -20,6 +20,8 @@ elpa
 eln-cache
 *.elc
 *-autoloads.el
+site-lisp/**/*.info
+site-lisp/**/dir
 .yas-compiled-snippets.*
 flycheck_init.el
 projects.eld

@@ -1,38 +1,31 @@
-;;; site-lisp.el --- Third-party packages as git submodules  -*- lexical-binding: t; -*-
+;;; site-lisp.el --- Third-party packages kept in this config  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Each directory next to this file is a git submodule holding one package,
-;; so package.el and the package archives aren't used at all.  A submodule
-;; records an exact commit: a package only changes when I update it.
+;; Each directory next to this file holds one package, copied in from its
+;; original repository and now part of this config: free to edit, and only
+;; changed when I change it.  package.el and the package archives aren't
+;; used at all.
 ;;
 ;; init.el loads this file and calls `Minimalist/site-lisp-activate', which
 ;; puts every package on `load-path' and loads its autoloads.
 ;;
-;; Run these from ~/.emacs.d.  After any of them, rebuild (last command):
+;; A package's Lisp files are in its directory, or in a lisp/ or elisp/
+;; subdirectory if it has one.  Manuals are .texi files in the directory or
+;; in doc/ or docs/.
 ;;
-;;   Fresh clone of this config:
-;;     git submodule update --init
-;;   Update one package to its latest commit:
-;;     git submodule update --remote site-lisp/NAME
-;;   Add a package (or a new dependency of one):
-;;     git submodule add URL site-lisp/NAME
-;;     git config -f .gitmodules submodule.site-lisp/NAME.ignore untracked
-;;   Remove a package:
-;;     git rm site-lisp/NAME
-;;   Build: generate autoloads, byte-compile every package and build the
-;;   Info manuals (C-h i) of those that have one:
-;;     emacs --batch -l site-lisp/site-lisp.el -f Minimalist/site-lisp-build
+;; Add a package (or a new dependency of one): copy its files into
+;; site-lisp/NAME.  Remove one: delete its directory.  After adding,
+;; updating or editing packages, rebuild from ~/.emacs.d:
 ;;
-;; Building the manuals needs makeinfo and install-info from Homebrew's
-;; texinfo; macOS's own are too old.  Without them, the manuals are skipped.
+;;   emacs --batch -l site-lisp/site-lisp.el -f Minimalist/site-lisp-build
 ;;
-;; Some packages are pinned to a release tag instead of following their
-;; main branch (eat, vundo).  To update one of those, check out the newer
-;; tag inside its directory instead of using --remote.
+;; That generates autoloads, byte-compiles every package and builds the
+;; Info manuals (C-h i) of those that have one.  Building the manuals needs
+;; makeinfo and install-info from Homebrew's texinfo; macOS's own are too
+;; old.  Without them, the manuals are skipped.
 ;;
-;; Build output (*.elc, *-autoloads.el, *.info, dir) stays inside each
-;; submodule; the "ignore = untracked" setting in .gitmodules keeps it out of
-;; git status.
+;; Build output (*.elc, *-autoloads.el, *.info, dir) sits next to the
+;; sources and is ignored by git (see .gitignore).
 
 ;;; Code:
 

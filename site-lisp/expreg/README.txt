@@ -1,0 +1,22 @@
+Expreg is now available on ELPA.
+
+This is just like expand-region, but (1) we generate all regions at
+once, and (2) should be easier to debug, and (3) we out-source
+language-specific expansions to tree-sitter. Bind ‘expreg-expand’ and
+‘expreg-contract’ and start using it.
+
+Note that if point is in between two possible regions, we only keep
+the region after point. In the example below, only region B is kept
+(“|” represents point):
+
+    (region A)|(region B)
+
+Expreg also recognizes subwords if ‘subword-mode’ is on.
+
+If ‘expreg-restore-point-on-quit’ is t, when you press ‘C-g’ when
+region is active, on top of deactivating the region, Emacs also
+restores point to where it was when you first started expanding.
+
+Customize ‘expreg-functions’ to control what kind of entities are
+recognized and expanded to. For example, expreg--subword expands
+subwords, expreg--list expands list elements and lists themselves.
