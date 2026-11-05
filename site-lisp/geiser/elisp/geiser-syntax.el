@@ -194,7 +194,7 @@ implementation-specific entries for font-lock-keywords.")
 
 (defun geiser-syntax--read/ex-symbol ()  ;; #{foo bar}# style symbols
   (let ((tk (geiser-syntax--read/matching "{" "}")))
-    (when-let (c (geiser-syntax--read/next-char))
+    (when-let* ((c (geiser-syntax--read/next-char)))
       (when (char-equal ?\# c)
         (geiser-syntax--read/next-char)
         (cons 'atom (make-symbol (format "#{%s}#" tk)))))))

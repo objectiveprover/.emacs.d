@@ -95,7 +95,7 @@ SYNTAX must be a valid argument for `string-to-syntax'."
 ;; For the word before point, set the font-lock-face property.
 (defun forth-syntax--mark-font-lock-keyword ()
   (let ((start forth-syntax--current-word-start))
-    (put-text-property start (point) 'font-lock-face font-lock-keyword-face)))
+    (put-text-property start (point) 'font-lock-face 'font-lock-keyword-face)))
 
 (defun forth-syntax--state-font-lock-keyword ()
   (forth-syntax--mark-font-lock-keyword)
@@ -134,7 +134,7 @@ SYNTAX must be a valid argument for `string-to-syntax'."
 	  (t
 	   (forth-syntax--set-word-syntax start (point))
 	   (put-text-property start (point) 'font-lock-face
-			      font-lock-function-name-face)
+			      'font-lock-function-name-face)
 	   #'forth-syntax--state-normal))))
 
 (defun forth-syntax--parse-comment (backward-regexp forward-regexp)

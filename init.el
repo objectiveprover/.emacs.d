@@ -315,8 +315,12 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
   :init
   (icomplete-vertical-mode))
 
-;; Descriptions next to the candidates, e.g. for describe-function
-(setopt completions-detailed t)
+;; Descriptions next to the candidates: docstrings for commands, functions
+;; and variables, sizes and dates for files, modes for buffers...
+(use-package marginalia
+  :functions marginalia-mode
+  :init
+  (marginalia-mode))
 
 ;; Find functions, variables, etc. without being precise in the spelling.
 ;; partial-completion matches each word anywhere in the candidate, in order.

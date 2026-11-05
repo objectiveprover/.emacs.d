@@ -710,7 +710,7 @@ If such a comment exists, delete the comment (including all leading
   and whose cdr is the point of the comment's initial semicolon,
   relative to the start of the line."
   (save-excursion
-    (paredit-skip-whitespace t (point-at-eol))
+    (paredit-skip-whitespace t (line-end-position))
     (and (eq ?\; (char-after))
          (not (eq ?\; (char-after (1+ (point)))))
          (not (or (paredit-in-string-p)
@@ -718,10 +718,10 @@ If such a comment exists, delete the comment (including all leading
          (let* ((start                  ;Move to before the semicolon.
                  (progn (backward-char) (point)))
                 (comment
-                 (buffer-substring start (point-at-eol))))
-           (paredit-skip-whitespace nil (point-at-bol))
-           (delete-region (point) (point-at-eol))
-           (cons comment (- start (point-at-bol)))))))
+                 (buffer-substring start (line-end-position))))
+           (paredit-skip-whitespace nil (line-beginning-position))
+           (delete-region (point) (line-end-position))
+           (cons comment (- start (line-beginning-position)))))))
 
 (defun paredit-insert-pair (n open close forward)
   (let* ((regionp
@@ -1006,7 +1006,7 @@ If in a comment and if followed by invalid structure, call
   (cond ((paredit-in-string-p)
          (newline))
         ((paredit-in-comment-p)
-         (if (paredit-region-ok-p (point) (point-at-eol))
+         (if (paredit-region-ok-p (point) (line-end-position))
              (progn (newline-and-indent)
                     (paredit-ignore-sexp-errors (indent-sexp)))
              (indent-new-comment-line)))
@@ -1096,7 +1096,7 @@ If a list begins on the line after the point but ends on a different
 
 (defun paredit-semicolon-find-line-break-point ()
   (and (not (eolp))                   ;Implies (not (eobp)).
-       (let ((eol (point-at-eol)))
+       (let ((eol (line-end-position)))
          (save-excursion
            (catch 'exit
              (while t
@@ -1106,16 +1106,16 @@ If a list begins on the line after the point but ends on a different
                         ;; Successfully advanced by an S-expression.
                         ;; If that S-expression started on this line
                         ;; and ended on another one, break here.
-                        (cond ((not (eq eol (point-at-eol)))
+                        (cond ((not (eq eol (line-end-position)))
                                (throw 'exit
                                       (and (save-excursion
                                              (backward-sexp)
-                                             (eq eol (point-at-eol)))
+                                             (eq eol (line-end-position)))
                                            line-break-point)))
                               ((eobp)
                                (throw 'exit nil))))
                        ((save-excursion
-                          (paredit-skip-whitespace t (point-at-eol))
+                          (paredit-skip-whitespace t (line-end-position))
                           (or (eolp) (eobp) (eq (char-after) ?\;)))
                         ;; Can't move further, but there's no closing
                         ;; delimiter we're about to clobber -- either
@@ -1215,7 +1215,7 @@ This is expected to be called only in `paredit-comment-dwim'; do not
       ;; COMMENT-P to true; if not, it will be nil.
       (while (progn
                (setq comment-p          ;t -> no error
-                     (comment-search-forward (point-at-eol) t))
+                     (comment-search-forward (line-end-position) t))
                (and comment-p
                     (or (paredit-in-string-p)
                         (paredit-in-char-p (1- (point))))))
@@ -1224,11 +1224,12 @@ This is expected to be called only in `paredit-comment-dwim'; do not
 
 (defun paredit-insert-comment ()
   (let ((code-after-p
-         (save-excursion (paredit-skip-whitespace t (point-at-eol))
+         (save-excursion (paredit-skip-whitespace t (line-end-position))
                          (not (eolp))))
         (code-before-p
-         (save-excursion (paredit-skip-whitespace nil (point-at-bol))
-                         (not (bolp)))))
+         (save-excursion
+           (paredit-skip-whitespace nil (line-beginning-position))
+           (not (bolp)))))
     (cond ((and (bolp)
                 (let ((indent
                        (let ((indent (calculate-lisp-indent)))
@@ -1378,8 +1379,8 @@ If `delete-active-region' is enabled and the mark is active and
   ;; the line break.  Refuse to do so if if moving the next line into
   ;; the comment would break structure.
   (if (eolp)
-      (let ((next-line-start (point-at-bol 2))
-            (next-line-end (point-at-eol 2)))
+      (let ((next-line-start (line-beginning-position 2))
+            (next-line-end (line-end-position 2)))
         (paredit-check-region next-line-start next-line-end))))
 
 (defun paredit-forward-delete-in-comment ()
@@ -1389,7 +1390,7 @@ If `delete-active-region' is enabled and the mark is active and
 (defun paredit-forward-delete-comment-start ()
   ;; Point precedes a comment start (not at eol).  Refuse to delete a
   ;; comment start if the comment contains unbalanced junk.
-  (paredit-check-region (+ (point) 1) (point-at-eol))
+  (paredit-check-region (+ (point) 1) (line-end-position))
   (delete-char +1))
 
 (defun paredit-backward-delete (&optional argument)
@@ -1496,7 +1497,7 @@ If `delete-active-region' is enabled and the mark is active and
         ;; Must call `paredit-in-string-p' before
         ;; `paredit-in-comment-p'.
         (not (or (paredit-in-string-p) (paredit-in-comment-p))))
-      (paredit-check-region (point) (point-at-eol)))
+      (paredit-check-region (point) (line-end-position)))
   (backward-delete-char-untabify +1))
 
 (defun paredit-backward-delete-maybe-comment-end ()
@@ -1507,7 +1508,7 @@ If `delete-active-region' is enabled and the mark is active and
   (if (save-excursion
         (backward-char)
         (and (not (paredit-in-string-p)) (paredit-in-comment-p)))
-      (paredit-check-region (point-at-eol) (point-at-bol)))
+      (paredit-check-region (line-end-position) (line-beginning-position)))
   (delete-char -1))
 
 ;;;; Killing
@@ -1533,7 +1534,7 @@ In that case, ensure there is at least one space between the
          (paredit-kill-line-in-string))
         ((paredit-in-comment-p)
          (paredit-kill-line-in-comment))
-        ((save-excursion (paredit-skip-whitespace t (point-at-eol))
+        ((save-excursion (paredit-skip-whitespace t (line-end-position))
                          (or (eolp) (eq (char-after) ?\; )))
          ;** Be careful about trailing backslashes.
          (if (paredit-in-char-p)
@@ -1542,7 +1543,7 @@ In that case, ensure there is at least one space between the
         (t (paredit-kill-sexps-on-line))))
 
 (defun paredit-kill-line-in-string ()
-  (if (save-excursion (paredit-skip-whitespace t (point-at-eol))
+  (if (save-excursion (paredit-skip-whitespace t (line-end-position))
                       (eolp))
       (kill-line)
     (save-excursion
@@ -1550,7 +1551,7 @@ In that case, ensure there is at least one space between the
       (if (paredit-in-string-escape-p)
           (backward-char))
       (kill-region (point)
-                   (min (point-at-eol)
+                   (min (line-end-position)
                         (cdr (paredit-string-start+end-points)))))))
 
 (defun paredit-kill-line-in-comment ()
@@ -1563,7 +1564,7 @@ In that case, ensure there is at least one space between the
   (if (paredit-in-char-p)               ; Move past the \ and prefix.
       (backward-char 2))                ; (# in Scheme/CL, ? in elisp)
   (let ((beginning (point))
-        (eol (point-at-eol)))
+        (eol (line-end-position)))
     (let ((end-of-list-p (paredit-forward-sexps-to-kill beginning eol)))
       ;; If we got to the end of the list and it's on the same line,
       ;; move backward past the closing delimiter before killing.  (This
@@ -1579,7 +1580,7 @@ In that case, ensure there is at least one space between the
                      ;; the last S-expression we found.  Be sure,
                      ;; though, not to kill any closing parentheses.
                      (if (and (not end-of-list-p)
-                              (eq (point-at-eol) eol))
+                              (eq (line-end-position) eol))
                          eol
                          (point)))))))
 
@@ -1588,7 +1589,7 @@ In that case, ensure there is at least one space between the
 ;;; and the closing delimiter both lie on this line.  Return true if
 ;;; the closing delimiter of this list is on this line, false if not.
 ;;;
-;;; beginning is (point), and eol is (point-at-eol).  Handling of
+;;; beginning is (point), and eol is (line-end-position).  Handling of
 ;;; `kill-whole-line' is trick, and probably kind of broken.
 
 (defun paredit-forward-sexps-to-kill (_beginning eol)
@@ -1610,7 +1611,7 @@ In that case, ensure there is at least one space between the
             ;; list.  Stop here, but record whether the closing
             ;; delimiter occurred on the starting line.
             (up-list)
-            (setq end-of-list-p (eq (point-at-eol) eol))
+            (setq end-of-list-p (eq (line-end-position) eol))
             (throw 'return nil))
           ;; We can move forward.  Where did we move to?  Stop if:
           ;;
@@ -1629,7 +1630,7 @@ In that case, ensure there is at least one space between the
                   (paredit-handle-sexp-errors   ;(b)
                       (progn (backward-sexp) nil)
                     t)
-                  (not (eq (point-at-eol) eol)))
+                  (not (eq (line-end-position) eol)))
               (throw 'return nil)))
         ;; Determined we can and should move forward.  Do so.
         (forward-sexp)
@@ -1662,9 +1663,10 @@ In that case, ensure there is at least one space between the
                           (point)))
                    ;; ...or just use the point past the newline, if
                    ;; we encounter a comment.
-                   (point-at-eol)))
-  (cond ((save-excursion (paredit-skip-whitespace nil (point-at-bol))
-                         (bolp))
+                   (line-end-position)))
+  (cond ((save-excursion
+           (paredit-skip-whitespace nil (line-beginning-position))
+           (bolp))
          ;; Nothing but indentation before the point, so indent it.
          (lisp-indent-line))
         ((eobp) nil)       ; Protect the CHAR-SYNTAX below against NIL.
@@ -1789,14 +1791,14 @@ In that case, ensure there is at least one space between the
   (cond ((paredit-in-string-p)
          (paredit-copy-as-kill-in-string))
         ((paredit-in-comment-p)
-         (copy-region-as-kill (point) (point-at-eol)))
-        ((save-excursion (paredit-skip-whitespace t (point-at-eol))
+         (copy-region-as-kill (point) (line-end-position)))
+        ((save-excursion (paredit-skip-whitespace t (line-end-position))
                          (or (eolp) (eq (char-after) ?\; )))
          ;** Be careful about trailing backslashes.
          (save-excursion
            (if (paredit-in-char-p)
                (backward-char))
-           (copy-region-as-kill (point) (point-at-eol))))
+           (copy-region-as-kill (point) (line-end-position))))
         (t (paredit-copy-sexps-as-kill))))
 
 (defun paredit-copy-as-kill-in-string ()
@@ -1804,7 +1806,7 @@ In that case, ensure there is at least one space between the
     (if (paredit-in-string-escape-p)
         (backward-char))
     (copy-region-as-kill (point)
-                         (min (point-at-eol)
+                         (min (line-end-position)
                               (cdr (paredit-string-start+end-points))))))
 
 (defun paredit-copy-sexps-as-kill ()
@@ -1812,7 +1814,7 @@ In that case, ensure there is at least one space between the
     (if (paredit-in-char-p)
         (backward-char 2))
     (let ((beginning (point))
-          (eol (point-at-eol)))
+          (eol (line-end-position)))
       (let ((end-of-list-p (paredit-forward-sexps-to-kill beginning eol)))
         (if end-of-list-p (progn (up-list) (backward-char)))
         (copy-region-as-kill beginning
@@ -1821,9 +1823,9 @@ In that case, ensure there is at least one space between the
                                           (paredit-skip-whitespace t)
                                           (and (not (eq (char-after) ?\; ))
                                                (point)))
-                                        (point-at-eol)))
+                                        (line-end-position)))
                                    ((and (not end-of-list-p)
-                                         (eq (point-at-eol) eol))
+                                         (eq (line-end-position) eol))
                                     eol)
                                    (t
                                     (point))))))))
@@ -1896,7 +1898,7 @@ With a prefix argument, skip the balance check."
                                (eq end-comment-state nil)))
                       (save-excursion
                         (goto-char end)
-                        (paredit-region-ok-p (point) (point-at-eol))))))
+                        (paredit-region-ok-p (point) (line-end-position))))))
         (error "Mismatched comment state: %s"
                (cond ((and (integerp start-comment-state)
                            (integerp end-comment-state))
@@ -2328,8 +2330,10 @@ If the point is on an S-expression, such as a string or a symbol, not
         ;;
         ;; XXX What if the *column* of the starting point was preserved
         ;; too?  Should we avoid reindenting in that case?
-        (if (not (eq (save-excursion (goto-char indent-start) (point-at-eol))
-                     (save-excursion (goto-char indent-end) (point-at-eol))))
+        (if (not (eq (save-excursion (goto-char indent-start)
+                                     (line-end-position))
+                     (save-excursion (goto-char indent-end)
+                                     (line-end-position))))
             (indent-region indent-start indent-end nil))))))
 
 ;;; The effects of convolution on the surrounding whitespace are pretty
@@ -2743,7 +2747,7 @@ Both must be lists, strings, or atoms; error if there is a mismatch."
          ;; (foo)| ;x\n(bar) => (foo | ;x\nbar), not (foo|  ;x\nbar).
          (and (not (eolp))
               (save-excursion
-                (paredit-skip-whitespace t (point-at-eol))
+                (paredit-skip-whitespace t (line-end-position))
                 (eq (char-after) ?\;)))
          ;; (foo)|(bar) => (foo| bar), not (foo|bar).
          (and (= left-point right-point)
@@ -2888,16 +2892,17 @@ Don't reindent the line starting at START, however."
       (error "Incorrectly related points: %S, %S" start end))
   (save-excursion
     (goto-char start)
-    (let ((bol (point-at-bol)))
+    (let ((bol (line-beginning-position)))
       ;; Skip all S-expressions that end on the starting line, but
       ;; don't go past `end'.
-      (if (and (save-excursion (goto-char end) (not (eq bol (point-at-bol))))
+      (if (and (save-excursion (goto-char end)
+                               (not (eq bol (line-beginning-position))))
                (paredit-handle-sexp-errors
                    (catch 'exit
                      (while t
                        (save-excursion
                          (forward-sexp)
-                         (if (not (eq bol (point-at-bol)))
+                         (if (not (eq bol (line-beginning-position)))
                              (throw 'exit t))
                          (if (not (< (point) end))
                              (throw 'exit nil)))
@@ -2906,9 +2911,9 @@ Don't reindent the line starting at START, however."
           (progn
             ;; Point is still on the same line, but precedes an
             ;; S-expression that ends on a different line.
-            (if (not (eq bol (point-at-bol)))
+            (if (not (eq bol (line-beginning-position)))
                 (error "Internal error -- we moved forward a line!"))
-            (goto-char (+ 1 (point-at-eol)))
+            (goto-char (+ 1 (line-end-position)))
             (if (not (<= (point) end))
                 (error "Internal error -- we frobnitzed the garfnut!"))
             (indent-region (point) end nil))))))
@@ -3063,8 +3068,8 @@ This is independent of context -- it doesn't check what state the
 (defun paredit-current-column ()
   ;; Like current-column, but respects field boundaries in interactive
   ;; modes like ielm.  For use only with paredit-restore-column, which
-  ;; works relative to point-at-bol.
-  (- (point) (point-at-bol)))
+  ;; works relative to line-beginning-position.
+  (- (point) (line-beginning-position)))
 
 (defun paredit-current-indentation ()
   (save-excursion
@@ -3079,7 +3084,7 @@ This is independent of context -- it doesn't check what state the
   ;; left).
   (let ((indentation* (paredit-current-indentation)))
     (goto-char
-     (+ (point-at-bol)
+     (+ (line-beginning-position)
         (cond ((not (< column indentation))
                (+ column (- indentation* indentation)))
               ((<= indentation* column) indentation*)

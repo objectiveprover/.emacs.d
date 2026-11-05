@@ -301,7 +301,7 @@ Return its local name."
                       'action geiser-chez-browse-function))
 
 (defun geiser-chez--display-docstring (res)
-  (when-let ((labels (cdr (assoc "labels" res))))
+  (when-let* ((labels (cdr (assoc "labels" res))))
     (insert (format "%s\n" (or (cdr (assoc "docstring" res)) "")))
     (let* ((csug (cdr (assoc 'csug labels)))
            (csug-url (and (stringp csug) (concat geiser-chez-csug-url csug)))

@@ -633,7 +633,7 @@ Argument TEST is the case before BODY execution."
     (git-gutter-mode +1)))
 
 ;;;###autoload
-(define-global-minor-mode global-git-gutter-mode git-gutter-mode git-gutter--turn-on)
+(define-globalized-minor-mode global-git-gutter-mode git-gutter-mode git-gutter--turn-on)
 
 (defsubst git-gutter:show-gutter-p (diffinfos)
   (if git-gutter:hide-gutter
