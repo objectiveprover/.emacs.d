@@ -411,7 +411,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
   :demand t
   :custom
   (flycheck-emacs-lisp-load-path 'inherit)
-  (flycheck-global-modes '(not lisp-interaction-mode markdown-ts-mode))
+  (flycheck-global-modes '(not lisp-interaction-mode markdown-ts-mode scheme-mode inferior-scheme-mode))
   (flycheck-indication-mode 'left-fringe)
   (flycheck-idle-change-delay 2.0)
   (flycheck-display-errors-delay 1.5)
@@ -776,7 +776,8 @@ of recomputed on every mode-line redisplay."
 ;; Scheme (Chez Scheme)
 (use-package geiser-chez
   :custom
-  (geiser-chez-binary "chez"))
+  (geiser-chez-binary "chez")
+  (geiser-active-implementations '(chez)))
 
 ;; --------------------------------------------------------------------------------
 ;; Forth (GForth)
