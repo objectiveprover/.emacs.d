@@ -32,10 +32,9 @@
         aggressive-indent
         dirvish
         eat
-        emmet-mode
-        exec-path-from-shell
         expand-region
-        flycheckforth-mode
+        flycheck
+        forth-mode
         geiser-chez
         git-gutter
         iedit
@@ -66,15 +65,6 @@
   "Alias for `use-package NAME :ensure nil ... ARGS'."
   (declare (indent defun))
   `(use-package ,name :ensure nil ,@args))
-
-;; macOS GUI apps don't inherit the shell environment
-(use-package exec-path-from-shell
-  :if (memq window-system '(mac ns))
-  :demand t
-  :custom
-  (exec-path-from-shell-variables '("PATH" "MANPATH" "GOPATH" "GOROOT"))
-  :config
-  (exec-path-from-shell-initialize))
 
 ;; --------------------------------------------------------------------------------
 ;; Colors
@@ -129,7 +119,7 @@
 (defconst Minimalist/fg-comment   Minimalist/magenta-600 "Comments.")
 (defconst Minimalist/fg-secondary Minimalist/base-800    "Secondary UI text: mode line, buttons.")
 (defconst Minimalist/fg-subtle    Minimalist/base-600    "Header line.")
-(defconst Minimalist/fg-faint     Minimalist/base-300    "Line numbers, fringe, Git signs.")
+(defconst Minimalist/fg-faint     Minimalist/base-300    "Line numbers, Git signs.")
 (defconst Minimalist/fg-ghost     Minimalist/base-200    "Barely visible syntax: parentheses.")
 
 ;; Tokens: surfaces
@@ -146,9 +136,7 @@
 
 ;; Tokens: diagnostics
 (defconst Minimalist/error        Minimalist/red-600    "Errors.")
-(defconst Minimalist/warning      Minimalist/yellow-600 "Warning marks in the fringe.")
 (defconst Minimalist/warning-text Minimalist/orange-600 "Text flagged with a warning.")
-(defconst Minimalist/info         Minimalist/blue-600   "Info diagnostics.")
 
 ;; --------------------------------------------------------------------------------
 ;; General behavior
@@ -380,6 +368,18 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 (declare-function spell-fu-dictionary-add "spell-fu")
 (declare-function spell-fu-get-ispell-dictionary "spell-fu")
 (declare-function spell-fu-get-personal-dictionary "spell-fu")
+
+;; There are lots of technical words that we don't want flagged as typos,
+;; so they go in a local custom dictionary.
+(defun Minimalist/spell-fu-add-personal-dict ()
+  "Add the en_US and personal dictionaries to the current buffer."
+  (spell-fu-dictionary-add
+   (spell-fu-get-ispell-dictionary "en_US"))
+  (spell-fu-dictionary-add
+   (spell-fu-get-personal-dictionary
+    "en-personal"
+    (expand-file-name "personal-dictionary.pws" user-emacs-directory))))
+
 (use-package spell-fu
   :demand t
   :config
@@ -392,16 +392,6 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
                   font-lock-builtin-face
                   font-lock-constant-face
                   font-lock-type-face))
-  ;; There are lots of technical words that we don't want flagged as typos,
-  ;; so they go in a local custom dictionary.
-  (defun Minimalist/spell-fu-add-personal-dict ()
-    "Add the en_US and personal dictionaries to the current buffer."
-    (spell-fu-dictionary-add
-     (spell-fu-get-ispell-dictionary "en_US"))
-    (spell-fu-dictionary-add
-     (spell-fu-get-personal-dictionary
-      "en-personal"
-      (expand-file-name "personal-dictionary.pws" user-emacs-directory))))
   (add-hook 'spell-fu-mode-hook #'Minimalist/spell-fu-add-personal-dict)
   ;; Enable last, so buffers that exist already also get the hook
   (spell-fu-global-mode))
@@ -412,21 +402,9 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
   :custom
   (flycheck-emacs-lisp-load-path 'inherit)
   (flycheck-global-modes '(not lisp-interaction-mode markdown-ts-mode scheme-mode inferior-scheme-mode))
-  (flycheck-indication-mode 'left-fringe)
   (flycheck-idle-change-delay 2.0)
   (flycheck-display-errors-delay 1.5)
   :config
-  (dolist (level '(error warning info))
-    (put level 'flycheck-fringe-bitmaps '(Minimalist/square . Minimalist/square)))
-  (set-face-attribute 'flycheck-fringe-error nil
-                      :foreground Minimalist/error
-                      :background 'unspecified)
-  (set-face-attribute 'flycheck-fringe-warning nil
-                      :foreground Minimalist/warning
-                      :background 'unspecified)
-  (set-face-attribute 'flycheck-fringe-info nil
-                      :foreground Minimalist/info
-                      :background 'unspecified)
   (set-face-attribute 'flycheck-warning nil
                       :foreground Minimalist/warning-text :weight 'normal)
   (setq flycheck-mode-line
@@ -476,6 +454,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 ;; Git indicators, only in code buffers: git-gutter and visual-fill-column
 ;; both use the left margin and would fight over it in text buffers.
 ;; The signs need a Nerd Font.
+(declare-function git-gutter:update-all-windows "git-gutter")
 (use-package git-gutter
   :hook (prog-mode . git-gutter-mode)
   :custom
@@ -607,9 +586,6 @@ of recomputed on every mode-line redisplay."
 (set-face-attribute 'header-line nil
                     :background Minimalist/bg
                     :foreground Minimalist/fg-subtle)
-(set-face-attribute 'fringe nil
-                    :background Minimalist/bg
-                    :foreground Minimalist/fg-faint)
 (set-face-attribute 'mode-line nil
                     :background Minimalist/bg-surface
                     :foreground Minimalist/fg-secondary
@@ -746,7 +722,7 @@ of recomputed on every mode-line redisplay."
 
 ;; Show color strings in their color
 (use-package rainbow-mode
-  :hook ((css-ts-mode emacs-lisp-mode) . rainbow-mode)
+  :hook (emacs-lisp-mode . rainbow-mode)
   :custom
   (rainbow-x-colors nil))
 
@@ -759,7 +735,7 @@ of recomputed on every mode-line redisplay."
 
 ;; Keep Lisp code indented as it's edited
 (use-package aggressive-indent
-  :hook ((emacs-lisp-mode lisp-mode scheme-mode clojure-mode) . aggressive-indent-mode))
+  :hook ((emacs-lisp-mode lisp-mode scheme-mode) . aggressive-indent-mode))
 
 ;; Emacs Lisp: semantic highlighting and highlighting of the variable at point
 (setopt elisp-fontify-semantically t
