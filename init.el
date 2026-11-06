@@ -541,7 +541,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 (xterm-mouse-mode -1)
 
 (add-hook 'prog-mode-hook #'display-line-numbers-mode)
-(add-hook 'text-mode-hook #'display-line-numbers-mode)
+;; (add-hook 'text-mode-hook #'display-line-numbers-mode)
 
 ;; Mode line
 ;; The format below is fully custom, so the default mode-line-* pieces
