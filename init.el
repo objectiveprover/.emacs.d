@@ -825,6 +825,60 @@ of recomputed on every mode-line redisplay."
   (require 'forth-interaction-mode))
 
 ;; --------------------------------------------------------------------------------
+;; Elixir and Phoenix
+
+;; Tree-sitter grammars for the built-in elixir-ts-mode and heex-ts-mode.
+;; Install them once with M-x treesit-install-language-grammar, first
+;; "elixir", then "heex".  Building them needs git and a C compiler.
+(use-feature treesit
+  :config
+  (add-to-list 'treesit-language-source-alist
+               '(elixir "https://github.com/elixir-lang/tree-sitter-elixir"))
+  (add-to-list 'treesit-language-source-alist
+               '(heex "https://github.com/phoenixframework/tree-sitter-heex")))
+
+;; Format with the language server (mix format) before saving, but only
+;; when a server manages the buffer, so saving never fails without one
+(declare-function eglot-managed-p "eglot")
+(defun Minimalist/eglot-format-before-save ()
+  "Format the buffer with its language server, if one is managing it."
+  (when (and (fboundp 'eglot-managed-p) (eglot-managed-p))
+    (eglot-format-buffer)))
+
+(defun Minimalist/elixir-setup ()
+  "Start the language server and format on save in Elixir buffers."
+  (eglot-ensure)
+  (add-hook 'before-save-hook #'Minimalist/eglot-format-before-save nil t))
+
+;; Elixir code: .ex, .exs and mix.lock.  ~H sigils inside .ex files are
+;; highlighted as HEEx by elixir-ts-mode itself.
+(use-feature elixir-ts-mode
+  :mode ("\\.exs?\\'" "mix\\.lock\\'")
+  :hook (elixir-ts-mode . Minimalist/elixir-setup))
+
+;; Phoenix templates in their own .heex files
+(use-feature heex-ts-mode
+  :mode ("\\.heex\\'")
+  :hook (heex-ts-mode . Minimalist/elixir-setup))
+
+;; Language servers.  Eglot turns on Flymake in the buffers it manages, so
+;; their diagnostics show in the mode line like Emacs Lisp's.
+(use-feature eglot
+  :custom
+  ;; Stop a server when the last buffer it manages is killed
+  (eglot-autoshutdown t)
+  ;; Don't log every message to the events buffer; it slows editing down
+  (eglot-events-buffer-config '(:size 0 :format full))
+  :bind (:map eglot-mode-map
+              ("C-c e r" . eglot-rename)
+              ("C-c e a" . eglot-code-actions)
+              ("C-c e f" . eglot-format-buffer))
+  :config
+  ;; Expert, the official Elixir language server, found on PATH
+  (add-to-list 'eglot-server-programs
+               '((elixir-ts-mode heex-ts-mode) . ("expert" "--stdio"))))
+
+;; --------------------------------------------------------------------------------
 
 (provide 'init)
 ;;; init.el ends here
