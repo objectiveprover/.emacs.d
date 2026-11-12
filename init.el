@@ -303,8 +303,11 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 ;; Vertical minibuffer completion (M-x, find-file...)
 ;; RET picks the highlighted candidate and M-RET submits what was typed,
 ;; e.g. a new file name.  TAB inserts the candidate, e.g. to enter a directory.
+;; icomplete-scroll keeps the list in order and moves the highlight through it,
+;; instead of rotating the selected candidate to the top.
 (use-feature icomplete
   :custom
+  (icomplete-scroll t)
   (icomplete-show-matches-on-no-input t)
   (icomplete-compute-delay 0)
   (icomplete-prospects-height 12)
