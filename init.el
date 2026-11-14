@@ -34,6 +34,130 @@
   `(use-package ,name :ensure nil ,@args))
 
 ;; --------------------------------------------------------------------------------
+;; External programs
+;;
+;; Tools outside Emacs that this config uses.  The ones every setup needs
+;; are checked at startup; language tools are installed only when wanted.
+;; M-x Minimalist/install-tools installs any of them, through bootstrap.sh.
+
+(defconst Minimalist/tools
+  `((aspell "aspell and its English dictionary, for spell checking" t
+            "aspell")
+    (compiler "git and a C compiler, to build tree-sitter grammars" t
+              "git" "cc")
+    ,@(unless (eq system-type 'darwin)
+        '((clipboard "xclip and wl-clipboard, to paste from the system clipboard" t
+                     "xclip" "wl-paste")))
+    (clojure "Clojure CLI, Java and clojure-lsp" nil
+             "clojure" "java" "clojure-lsp")
+    (elixir "expert, the Elixir language server" nil
+            "expert")
+    (scheme "Chez Scheme" nil
+            ("chez" "chezscheme"))
+    (forth "Gforth" nil
+           "gforth"))
+  "Tools bootstrap.sh can install, as (NAME DESCRIPTION ESSENTIAL . PROGRAMS).
+ESSENTIAL tools are the ones every setup needs.  Each of PROGRAMS is a
+name, or a list of the names it goes by on different systems.  Keep in
+sync with bootstrap.sh.")
+
+(defun Minimalist/tool-installed-p (tool)
+  "Whether TOOL, an element of `Minimalist/tools', is installed."
+  (seq-every-p (lambda (program)
+                 (seq-some #'executable-find (ensure-list program)))
+               (nthcdr 3 tool)))
+
+(defun Minimalist/check-tools ()
+  "Warn about missing tools that every setup needs."
+  (when-let* ((missing
+               (seq-filter (lambda (tool)
+                             (and (nth 2 tool)
+                                  (not (Minimalist/tool-installed-p tool))))
+                           Minimalist/tools)))
+    (display-warning
+     'external-programs
+     (format "Not installed:\n%s\nM-x Minimalist/install-tools installs them."
+             (mapconcat (lambda (tool) (format "  %s: %s" (car tool) (nth 1 tool)))
+                        missing "\n")))))
+
+(add-hook 'emacs-startup-hook #'Minimalist/check-tools)
+
+(defun Minimalist/read-tools ()
+  "Ask which of `Minimalist/tools' to install, as a list of names.
+The essential ones that are missing are filled in to start with."
+  (let* ((installed (mapcar (lambda (tool)
+                              (cons (symbol-name (car tool))
+                                    (Minimalist/tool-installed-p tool)))
+                            Minimalist/tools))
+         (missing-essential
+          (seq-keep (lambda (tool)
+                      (and (nth 2 tool)
+                           (not (alist-get (symbol-name (car tool)) installed
+                                           nil nil #'equal))
+                           (symbol-name (car tool))))
+                    Minimalist/tools))
+         (completion-extra-properties
+          (list :annotation-function
+                (lambda (name)
+                  (format "  %s%s"
+                          (nth 1 (assq (intern name) Minimalist/tools))
+                          (if (alist-get name installed nil nil #'equal)
+                              "  (installed)"
+                            ""))))))
+    (or (completing-read-multiple
+         "Install (separate with commas): " (mapcar #'car installed) nil t
+         (and missing-essential
+              (concat (string-join missing-essential ",") ",")))
+        (user-error "No tools chosen"))))
+
+(defun Minimalist/read-install-directory (prompt default)
+  "Ask for a directory with PROMPT, offering DEFAULT; no trailing slash."
+  (directory-file-name
+   (expand-file-name
+    (read-directory-name prompt (file-name-as-directory default) nil nil))))
+
+(declare-function eat-make "eat")
+(defun Minimalist/install-tools (tools &optional bin-dir prefix dry-run)
+  "Install TOOLS, a list of names from `Minimalist/tools', with bootstrap.sh.
+Interactively, asks for the tools, then for each directory the chosen
+ones install into: BIN-DIR for clojure-lsp and expert and PREFIX for
+the Clojure CLI.  System packages go wherever
+Homebrew or apt puts them.  With a prefix argument, DRY-RUN: only show
+what would be done.
+
+bootstrap.sh runs in a terminal buffer, where sudo can ask for a password."
+  (interactive
+   (let* ((tools (Minimalist/read-tools))
+          (linux (eq system-type 'gnu/linux)))
+     (list tools
+           (when (seq-intersection tools '("clojure" "elixir"))
+             (Minimalist/read-install-directory
+              "Install clojure-lsp and expert in: " "~/.local/bin"))
+           (when (and linux (member "clojure" tools))
+             (Minimalist/read-install-directory
+              "Install the Clojure CLI under (it goes in bin/): " "~/.local"))
+           current-prefix-arg)))
+  (let ((args (append (and dry-run '("--dry-run"))
+                      (and bin-dir (list "--bin-dir" bin-dir))
+                      (and prefix (list "--prefix" prefix))
+                      tools)))
+    (when (y-or-n-p (format "Run bootstrap.sh %s? "
+                            (mapconcat #'shell-quote-argument args " ")))
+      ;; So this session finds what gets installed there, even if the
+      ;; shell's PATH doesn't have the directory yet
+      (unless dry-run
+        (dolist (dir (list bin-dir (and prefix (expand-file-name "bin" prefix))))
+          (when (and dir (not (member dir exec-path)))
+            (make-directory dir t)
+            (add-to-list 'exec-path dir)
+            (setenv "PATH" (concat dir path-separator (getenv "PATH"))))))
+      (require 'eat)
+      (pop-to-buffer
+       (apply #'eat-make "install tools" "bash" nil
+              (expand-file-name "bootstrap.sh" user-emacs-directory)
+              args)))))
+
+;; --------------------------------------------------------------------------------
 ;; Colors
 ;;
 ;; Two layers, as in a design system:
@@ -196,9 +320,9 @@ With REGION non-nil, unfill the paragraphs in the active region."
         (emacs-lisp-docstring-fill-column t))
     (fill-paragraph nil region)))
 
-;; Clipboard.  In the GUI this uses Emacs's own clipboard support.  In a
-;; terminal, copying goes through OSC 52 and pasting through an external
-;; command.
+;; Clipboard.  Copying goes through OSC 52: the terminal writes the text to
+;; the system clipboard, which also works over SSH and in tmux.  Pasting
+;; runs a command that prints the clipboard.
 
 (defconst Minimalist/clipboard-paste-command
   (cond ((eq system-type 'darwin) "pbpaste")
@@ -225,26 +349,23 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
   (interactive (if (region-active-p)
                    (list (region-beginning) (region-end))
                  (user-error "No active region to copy")))
-  (if (display-graphic-p)
-      (clipboard-kill-ring-save beg end)
-    (Minimalist/osc52-copy (buffer-substring-no-properties beg end)))
+  (Minimalist/osc52-copy (buffer-substring-no-properties beg end))
   (deactivate-mark)
   (message "Copied region to clipboard"))
 
 (defun Minimalist/paste-from-clipboard ()
   "Insert the system clipboard at point."
   (interactive)
-  (cond ((display-graphic-p) (clipboard-yank))
-        (Minimalist/clipboard-paste-command
-         (let ((text (with-temp-buffer
-                       ;; Discard stderr so error messages never get inserted
-                       (when (zerop (call-process-shell-command
-                                     Minimalist/clipboard-paste-command nil '(t nil)))
-                         (buffer-string)))))
-           (if text
-               (insert text)
-             (message "Couldn't read the clipboard"))))
-        (t (message "No clipboard reader available; use the terminal's paste"))))
+  (if Minimalist/clipboard-paste-command
+      (let ((text (with-temp-buffer
+                    ;; Discard stderr so error messages never get inserted
+                    (when (zerop (call-process-shell-command
+                                  Minimalist/clipboard-paste-command nil '(t nil)))
+                      (buffer-string)))))
+        (if text
+            (insert text)
+          (message "Couldn't read the clipboard")))
+    (message "No clipboard reader available; use the terminal's paste")))
 
 ;; Match delimiters
 (setopt electric-pair-preserve-balance t
@@ -505,7 +626,7 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 
 ;; Git indicators, only in code buffers: git-gutter and visual-fill-column
 ;; both use the left margin and would fight over it in text buffers.
-;; The signs need a Nerd Font.
+;; The signs need a Nerd Font in the terminal.
 (declare-function git-gutter:update-all-windows "git-gutter")
 (use-package git-gutter
   :hook (prog-mode . git-gutter-mode)
@@ -533,14 +654,13 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 
 ;; --------------------------------------------------------------------------------
 ;; Interface
-;; The menu bar, tool bar and scroll bars are turned off in early-init.el.
+;; Emacs runs in a terminal only.  The menu bar is turned off in early-init.el.
 
-;; Stop the cursor from blinking.
-;; In a terminal, what "visible" means depends on the emulator.
-(setopt visible-cursor nil
-        blink-cursor-mode nil)
+;; Ask the terminal for its normal cursor rather than the "very visible"
+;; one, which blinks in many terminals
+(setopt visible-cursor nil)
 
-;; Don't let mouse clicks in a terminal move the cursor (TTY only)
+;; Don't let mouse clicks move the cursor
 (xterm-mouse-mode -1)
 
 (add-hook 'prog-mode-hook #'display-line-numbers-mode)
@@ -632,20 +752,16 @@ of recomputed on every mode-line redisplay."
 
 (set-face-attribute 'default nil
                     :foreground Minimalist/fg
-                    :background Minimalist/bg
-                    :height 140
-                    :family "JetBrainsMono Nerd Font")
+                    :background Minimalist/bg)
 (set-face-attribute 'header-line nil
                     :background Minimalist/bg
                     :foreground Minimalist/fg-subtle)
 (set-face-attribute 'mode-line nil
                     :background Minimalist/bg-surface
-                    :foreground Minimalist/fg-secondary
-                    :box '(:style flat-button :line-width 4))
+                    :foreground Minimalist/fg-secondary)
 (set-face-attribute 'mode-line-inactive nil
                     :background Minimalist/bg-surface
-                    :foreground Minimalist/fg-faint
-                    :box '(:style flat-button :line-width 4))
+                    :foreground Minimalist/fg-faint)
 (set-face-attribute 'button nil
                     :foreground Minimalist/fg-secondary)
 (set-face-attribute 'show-paren-match nil
@@ -730,7 +846,7 @@ of recomputed on every mode-line redisplay."
                            space-after-tab space-mark tab-mark newline-mark
                            missing-newline-at-eof))
   :custom-face
-  (whitespace-space ((t (:background nil :foreground ,Minimalist/marker)))))
+  (whitespace-space ((t (:background unspecified :foreground ,Minimalist/marker)))))
 
 ;; --------------------------------------------------------------------------------
 ;; Text and markup
@@ -750,13 +866,8 @@ of recomputed on every mode-line redisplay."
 
 (use-feature org
   :config
-  (dolist (spec '((org-level-1 . 1.35)
-                  (org-level-2 . 1.2)
-                  (org-level-3 . 1.1)
-                  (org-level-4 . 1.05)))
-    (set-face-attribute (car spec) nil
-                        :height (cdr spec)
-                        :weight 'semibold)))
+  (dolist (face '(org-level-1 org-level-2 org-level-3 org-level-4))
+    (set-face-attribute face nil :weight 'bold)))
 
 (use-feature markdown-ts-mode
   :mode ("\\.md\\'" "\\.markdown\\'"))
@@ -766,6 +877,11 @@ of recomputed on every mode-line redisplay."
 
 ;; --------------------------------------------------------------------------------
 ;; General programming
+
+;; Tree-sitter modes build the grammar they need the first time they're
+;; used, without asking (needs git and a C compiler).  The built-in modes
+;; know where to get a version of the grammar they work with.
+(setopt treesit-auto-install-grammar 'always)
 
 ;; Hard-wrap comments, and only comments, in code
 (setopt comment-auto-fill-only-comments t)
@@ -793,11 +909,12 @@ of recomputed on every mode-line redisplay."
 
 ;; Keep parentheses balanced
 (use-package paredit
-  :hook ((emacs-lisp-mode lisp-mode scheme-mode) . paredit-mode))
+  :hook ((emacs-lisp-mode lisp-mode scheme-mode clojure-ts-mode) . paredit-mode))
 
 ;; Keep Lisp code indented as it's edited
 (use-package aggressive-indent
-  :hook ((emacs-lisp-mode lisp-mode scheme-mode) . aggressive-indent-mode))
+  :hook ((emacs-lisp-mode lisp-mode scheme-mode clojure-ts-mode)
+         . aggressive-indent-mode))
 
 ;; Emacs Lisp: semantic highlighting and highlighting of the variable at point
 (setopt elisp-fontify-semantically t
@@ -811,10 +928,11 @@ of recomputed on every mode-line redisplay."
             (setq mode-name
                   '("Elisp" (lexical-binding " \uf0ec Lexical" " \uf0ec Dynamic")))))
 
-;; Scheme (Chez Scheme)
+;; Scheme (Chez Scheme).  Homebrew calls the program chez, Debian and
+;; Ubuntu chezscheme.
 (use-package geiser-chez
   :custom
-  (geiser-chez-binary "chez")
+  (geiser-chez-binary (if (executable-find "chezscheme") "chezscheme" "chez"))
   (geiser-active-implementations '(chez)))
 
 ;; --------------------------------------------------------------------------------
@@ -828,44 +946,10 @@ of recomputed on every mode-line redisplay."
   (require 'forth-interaction-mode))
 
 ;; --------------------------------------------------------------------------------
-;; Elixir and Phoenix
+;; Language servers
 
-;; Tree-sitter grammars for the built-in elixir-ts-mode and heex-ts-mode.
-;; Install them once with M-x treesit-install-language-grammar, first
-;; "elixir", then "heex".  Building them needs git and a C compiler.
-(use-feature treesit
-  :config
-  (add-to-list 'treesit-language-source-alist
-               '(elixir "https://github.com/elixir-lang/tree-sitter-elixir"))
-  (add-to-list 'treesit-language-source-alist
-               '(heex "https://github.com/phoenixframework/tree-sitter-heex")))
-
-;; Format with the language server (mix format) before saving, but only
-;; when a server manages the buffer, so saving never fails without one
-(declare-function eglot-managed-p "eglot")
-(defun Minimalist/eglot-format-before-save ()
-  "Format the buffer with its language server, if one is managing it."
-  (when (and (fboundp 'eglot-managed-p) (eglot-managed-p))
-    (eglot-format-buffer)))
-
-(defun Minimalist/elixir-setup ()
-  "Start the language server and format on save in Elixir buffers."
-  (eglot-ensure)
-  (add-hook 'before-save-hook #'Minimalist/eglot-format-before-save nil t))
-
-;; Elixir code: .ex, .exs and mix.lock.  ~H sigils inside .ex files are
-;; highlighted as HEEx by elixir-ts-mode itself.
-(use-feature elixir-ts-mode
-  :mode ("\\.exs?\\'" "mix\\.lock\\'")
-  :hook (elixir-ts-mode . Minimalist/elixir-setup))
-
-;; Phoenix templates in their own .heex files
-(use-feature heex-ts-mode
-  :mode ("\\.heex\\'")
-  :hook (heex-ts-mode . Minimalist/elixir-setup))
-
-;; Language servers.  Eglot turns on Flymake in the buffers it manages, so
-;; their diagnostics show in the mode line like Emacs Lisp's.
+;; Eglot turns on Flymake in the buffers it manages, so their diagnostics
+;; show in the mode line like Emacs Lisp's.
 (use-feature eglot
   :custom
   ;; Stop a server when the last buffer it manages is killed
@@ -877,9 +961,91 @@ of recomputed on every mode-line redisplay."
               ("C-c e a" . eglot-code-actions)
               ("C-c e f" . eglot-format-buffer))
   :config
-  ;; Expert, the official Elixir language server, found on PATH
+  ;; Expert, the official Elixir language server, found on PATH.
+  ;; clojure-lsp is already in the defaults.
   (add-to-list 'eglot-server-programs
                '((elixir-ts-mode heex-ts-mode) . ("expert" "--stdio"))))
+
+;; Format with the language server before saving, but only when a server
+;; manages the buffer, so saving never fails without one
+(declare-function eglot-managed-p "eglot")
+(defun Minimalist/eglot-format-before-save ()
+  "Format the buffer with its language server, if one is managing it."
+  (when (and (fboundp 'eglot-managed-p) (eglot-managed-p))
+    (eglot-format-buffer)))
+
+(defun Minimalist/eglot-setup ()
+  "Start the language server and format on save."
+  (eglot-ensure)
+  (add-hook 'before-save-hook #'Minimalist/eglot-format-before-save nil t))
+
+;; --------------------------------------------------------------------------------
+;; Clojure
+
+;; Clojure files in a tree-sitter mode.  clojure-ts-mode builds its own
+;; grammars; M-x clojure-ts-reinstall-grammars rebuilds them.  clojure-mode is only
+;; here because CIDER needs it, so it's remapped to never edit files.
+;; The language server is clojure-lsp, found on PATH; it also formats on
+;; save (cljfmt).
+(use-package clojure-ts-mode
+  :mode (("\\.\\(clj\\|edn\\|bb\\)\\'" . clojure-ts-mode)
+         ("\\.cljs\\'" . clojure-ts-clojurescript-mode)
+         ("\\.cljc\\'" . clojure-ts-clojurec-mode))
+  :interpreter ("bb" . clojure-ts-mode)
+  :hook (clojure-ts-mode . Minimalist/eglot-setup)
+  :init
+  (dolist (remap '((clojure-mode . clojure-ts-mode)
+                   (clojurescript-mode . clojure-ts-clojurescript-mode)
+                   (clojurec-mode . clojure-ts-clojurec-mode)))
+    (add-to-list 'major-mode-remap-alist remap)))
+
+;; paredit binds RET, which in the REPL would shadow sending the input
+(defvar paredit-mode-map)
+(declare-function cider-repl-return "cider-repl")
+(defun Minimalist/cider-repl-paredit ()
+  "Enable paredit in the REPL, keeping RET for sending input."
+  (paredit-mode)
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map paredit-mode-map)
+    (keymap-set map "RET" #'cider-repl-return)
+    (push (cons 'paredit-mode map) minor-mode-overriding-map-alist)))
+
+;; REPL.  In a Clojure buffer, C-c C-x j j (or C-c M-j) starts one for the
+;; project, C-c C-e evaluates the form before point, C-c C-k the buffer,
+;; C-c C-z switches to the REPL and C-c C-t t runs the test at point.
+(use-package cider
+  :hook ((clojure-ts-mode . cider-mode)
+         (cider-repl-mode . Minimalist/cider-repl-paredit))
+  :custom
+  ;; Projects without deps.edn or project.clj get a Clojure CLI REPL
+  (cider-jack-in-default 'clojure-cli)
+  (cider-repl-display-help-banner nil)
+  ;; Show the REPL when it connects, but stay in the code
+  (cider-repl-pop-to-buffer-on-connect 'display-only)
+  ;; C-c C-k saves the buffer without asking
+  (cider-save-file-on-load t)
+  (cider-repl-history-file
+   (expand-file-name "cider-history" user-emacs-directory))
+  ;; Keep the nREPL connection and server buffers out of C-x b
+  (nrepl-hide-special-buffers t)
+  :config
+  (set-face-attribute 'cider-result-overlay-face nil
+                      :background Minimalist/bg-selection))
+
+;; --------------------------------------------------------------------------------
+;; Elixir and Phoenix
+
+;; Elixir code: .ex, .exs and mix.lock.  ~H sigils inside .ex files are
+;; highlighted as HEEx by elixir-ts-mode itself.  Formatted on save by the
+;; language server (mix format).
+(use-feature elixir-ts-mode
+  :mode ("\\.exs?\\'" "mix\\.lock\\'")
+  :hook (elixir-ts-mode . Minimalist/eglot-setup))
+
+;; Phoenix templates in their own .heex files
+(use-feature heex-ts-mode
+  :mode ("\\.heex\\'")
+  :hook (heex-ts-mode . Minimalist/eglot-setup))
 
 ;; --------------------------------------------------------------------------------
 

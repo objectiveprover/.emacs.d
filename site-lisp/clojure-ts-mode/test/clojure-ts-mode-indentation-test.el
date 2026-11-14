@@ -1,0 +1,1514 @@
+;;; clojure-ts-mode-indentation-test.el --- Clojure TS Mode: indentation test suite  -*- lexical-binding: t; -*-
+
+;; Copyright © 2022-2025 Danny Freeman
+
+;; This file is not part of GNU Emacs.
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; The unit test suite of Clojure TS Mode
+
+(require 'clojure-ts-mode)
+(require 'cl-lib)
+(require 'buttercup)
+(require 'test-helper "test/test-helper")
+(require 's nil t)               ;Don't burp if it's missing during compilation.
+
+
+(defmacro when-indenting-with-point-it (description before after)
+  "Return a buttercup spec.
+
+Check whether the swift indentation command will correctly change the buffer.
+Will also check whether point is moved to the expected position.
+
+BEFORE is the buffer string before indenting, where a pipe (|) represents
+point.
+
+AFTER is the expected buffer string after indenting, where a pipe (|)
+represents the expected position of point.
+
+DESCRIPTION is a string with the description of the spec."
+  (declare (indent 1))
+  `(it ,description
+     (let* ((after ,after)
+            (expected-cursor-pos (1+ (clojure-ts--s-index-of "|" after)))
+            (expected-state (delete ?| after)))
+       (with-clojure-ts-buffer ,before
+         (goto-char (point-min))
+         (search-forward "|")
+         (delete-char -1)
+         (font-lock-ensure)
+         (indent-according-to-mode)
+         (expect (buffer-string) :to-equal expected-state)
+         (expect (point) :to-equal expected-cursor-pos)))))
+
+
+
+;; Backtracking indent
+(defmacro when-indenting-it (description &rest forms)
+  "Return a buttercup spec.
+
+Check that all FORMS correspond to properly indented sexps.
+
+DESCRIPTION is a string with the description of the spec."
+  (declare (indent 1))
+  `(it ,description
+     (progn
+       ,@(mapcar (lambda (form)
+                   `(with-temp-buffer
+                      (clojure-ts-mode)
+                      (insert "\n" ,form);,(replace-regexp-in-string "\n +" "\n " form))
+                      (indent-region (point-min) (point-max))
+                      (expect (buffer-string) :to-equal ,(concat "\n" form))))
+                 forms))))
+
+(defmacro when-indenting-fixed-it (description &rest forms)
+  "Return a buttercup spec.
+
+Check that all FORMS correspond to properly indented sexps.
+
+DESCRIPTION is a string with the description of the spec.
+
+Sets `clojure-ts-indent-style' to `fixed'."
+  (declare (indent 1))
+  `(it ,description
+     (progn
+       ,@(mapcar (lambda (form)
+                   `(with-temp-buffer
+                      (let ((clojure-ts-indent-style 'fixed))
+                        (clojure-ts-mode)
+                        (insert "\n" ,form);,(replace-regexp-in-string "\n +" "\n " form))
+                        (indent-region (point-min) (point-max))
+                        (expect (buffer-string) :to-equal ,(concat "\n" form)))))
+                 forms))))
+
+(defmacro when-aligning-it (description &rest forms)
+  "Return a buttercup spec.
+
+Check that all FORMS correspond to properly indented sexps.
+
+DESCRIPTION is a string with the description of the spec."
+  (declare (indent defun))
+  `(it ,description
+     (let ((clojure-ts-align-forms-automatically t)
+           (clojure-ts-align-reader-conditionals t))
+       ,@(mapcar (lambda (form)
+                   `(with-temp-buffer
+                      (clojure-ts-mode)
+                      (insert "\n" ,(replace-regexp-in-string " +" " " form))
+                      (indent-region (point-min) (point-max))
+                      (should (equal (buffer-substring-no-properties (point-min) (point-max))
+                                     ,(concat "\n" form)))))
+                 forms))
+     (let ((clojure-ts-align-forms-automatically nil))
+       ,@(mapcar (lambda (form)
+                   `(with-temp-buffer
+                      (clojure-ts-mode)
+                      (insert "\n" ,(replace-regexp-in-string " +" " " form))
+                      ;; This is to check that we did NOT align anything. Run
+                      ;; `indent-region' and then check that no extra spaces
+                      ;; where inserted besides the start of the line.
+                      (indent-region (point-min) (point-max))
+                      (goto-char (point-min))
+                      (should-not (search-forward-regexp "\\([^\s\n]\\)  +" nil 'noerror))))
+                 forms))))
+
+
+;; Provide font locking for easier test editing.
+
+(font-lock-add-keywords
+ 'emacs-lisp-mode
+ `((,(rx "(" (group "when-indenting-with-point-it") eow)
+    (1 font-lock-keyword-face))
+   (,(rx "("
+         (group "when-indenting-with-point-it") (+ space)
+         (group bow (+ (not space)) eow)
+         )
+    (1 font-lock-keyword-face)
+    (2 font-lock-function-name-face))))
+
+
+;; Mock `cider--get-symbol-indent' function
+
+(defun cider--get-symbol-indent-mock (symbol-name)
+  "Return static mocked indentation specs for SYMBOL-NAME if available."
+  (when (stringp symbol-name)
+    (cond
+     ((string-equal symbol-name "my-with-in-str") 1)
+     ((string-equal symbol-name "my.alias/my-letfn") '(1 ((:defn)) :form))
+     ((string-equal symbol-name "my-defn") :defn)
+     ((string-equal symbol-name "my-extend") '(1 :defn))
+     ((string-equal symbol-name "my-reify") '(:defn (1)))
+     ((string-equal symbol-name "my-when") '((:block 1))))))
+
+
+(describe "Docstring indentation"
+  (dolist (markdown-inline '(nil t))
+    (describe (format "with markdown-inline %s" markdown-inline)
+      (it "should indent top-level docstrings like fontified clojure-mode"
+        (when markdown-inline
+          (assume (treesit-ready-p 'markdown-inline t)))
+        (let ((clojure-ts-use-markdown-inline markdown-inline))
+          (with-clojure-ts-buffer "(defn example
+  \"Summary.
+content
+    (code example)
+
+\"
+  []
+  :ok)
+"
+            (font-lock-ensure)
+            (indent-region (point-min) (point-max))
+            (expect (buffer-string) :to-equal "(defn example
+  \"Summary.
+  content
+    (code example)
+
+  \"
+  []
+  :ok)
+"))))
+      (it "should use the absolute fill prefix in protocol-method docstrings"
+        (when markdown-inline
+          (assume (treesit-ready-p 'markdown-inline t)))
+        (let ((clojure-ts-use-markdown-inline markdown-inline))
+          (with-clojure-ts-buffer "(defprotocol Example
+  (method [this]
+    \"Summary.
+content
+    (code example)
+
+\"))
+"
+            (font-lock-ensure)
+            (indent-region (point-min) (point-max))
+            (expect (buffer-string) :to-equal "(defprotocol Example
+  (method [this]
+    \"Summary.
+  content
+    (code example)
+
+  \"))
+"))))
+      (it "should indent a new docstring line to the fill prefix"
+        (when markdown-inline
+          (assume (treesit-ready-p 'markdown-inline t)))
+        (let ((clojure-ts-use-markdown-inline markdown-inline))
+          (with-clojure-ts-buffer "(defn example
+  \"Summary.
+      \")"
+            (font-lock-ensure)
+            (goto-char (point-min))
+            (search-forward "Summary.")
+            (newline-and-indent)
+            (expect (current-column) :to-equal 2)
+            ;; A deeper line keeps its indentation, even a blank one.
+            (forward-line 1)
+            (indent-for-tab-command)
+            (expect (current-indentation) :to-equal 6))))
+      (it "should keep indenting docstrings after the indentation style is set"
+        (when markdown-inline
+          (assume (treesit-ready-p 'markdown-inline t)))
+        (let ((clojure-ts-use-markdown-inline markdown-inline))
+          (with-clojure-ts-buffer "(defn example
+  \"Summary.
+content\")"
+            (setopt clojure-ts-indent-style 'semantic)
+            (font-lock-ensure)
+            (indent-region (point-min) (point-max))
+            (expect (buffer-string) :to-equal "(defn example
+  \"Summary.
+  content\")"))))
+      (it "should preserve ordinary strings"
+        (when markdown-inline
+          (assume (treesit-ready-p 'markdown-inline t)))
+        (let ((clojure-ts-use-markdown-inline markdown-inline))
+          (with-clojure-ts-buffer "(def value
+  \"Ordinary string.
+content
+    (code example)
+
+\")
+"
+            (font-lock-ensure)
+            (indent-region (point-min) (point-max))
+            (expect (buffer-string) :to-equal "(def value
+  \"Ordinary string.
+content
+    (code example)
+
+\")
+"))))
+      (it "should preserve docstrings after fill-paragraph"
+        (when markdown-inline
+          (assume (treesit-ready-p 'markdown-inline t)))
+        (dolist (clojure-ts-docstring-fill-prefix-width '(2 4))
+          (let ((clojure-ts-use-markdown-inline markdown-inline)
+                (clojure-ts-docstring-fill-column 35))
+            (with-clojure-ts-buffer "(defn example
+  \"Summary. This paragraph is long enough to wrap across several lines when filled by M-q.\"
+  []
+  :ok)"
+              (goto-char (point-min))
+              (search-forward "Summary")
+              (fill-paragraph)
+              (let ((filled (buffer-string)))
+                (indent-region (point-min) (point-max))
+                (expect (buffer-string) :to-equal filled)))))))))
+
+(describe "indentation"
+  (it "should not hang on end of buffer"
+    (with-clojure-ts-buffer "(let [a b]"
+      (goto-char (point-max))
+      (expect
+       (with-timeout (2)
+         (newline-and-indent)
+         t))))
+
+  (when-indenting-with-point-it "should have no indentation at top level"
+    "|x"
+
+    "|x")
+
+  (when-indenting-it "should handle non-symbol at start"
+    "
+{\"1\" 2
+ *3 4}")
+
+  (when-indenting-it "should have no indentation at top level lists with metadata"
+    "
+^{:foo true}
+(def b 2)")
+
+  (when-indenting-it "should have no indentation at top level vectors with metadata"
+    "
+^{:foo true}
+[1 2]")
+
+  (when-indenting-it "should have no indentation at top level maps with metadata"
+    "
+^{:foo true}
+{:a 1}")
+
+  (when-indenting-it "should have no indentation with metadata inside comment"
+    "
+(comment
+  ^{:a 1}
+  (def a 2))")
+
+  (when-indenting-it "should have params, docstring and body correctly indented in presence of metadata"
+    "
+^{:foo true}
+(defn c
+  \"hello\"
+  [_foo]
+  (+ 1 1))")
+
+  (when-indenting-it "should support function calls via vars"
+    "
+(#'foo 5
+       6)")
+
+  (when-indenting-it "should support function literals"
+    "
+#(or true
+     false
+     %)")
+
+  (when-indenting-it "should support block-0 expressions"
+    "
+(do (aligned)
+    (vertically))"
+
+    "
+(do
+  (indented)
+  (with-2-spaces))"
+
+    "
+(future
+  (body is indented))"
+
+    "
+(try
+  (something)
+  ;; A bit of block 2 rule
+  (catch Exception e
+    \"Third argument is indented with 2 spaces.\")
+  (catch ExceptionInfo
+         e-info
+    \"Second argument is aligned vertically with the first one.\"))")
+
+  (when-indenting-it "should support block-1 expressions"
+    "
+(case x
+  2 (print 2)
+  3 (print 3)
+  (print \"Default\"))"
+
+    "
+(cond-> {}
+  :always (assoc :hello \"World\")
+  false (do nothing))"
+
+    "
+(with-precision 32
+  (/ (bigdec 20) (bigdec 30)))"
+
+    "
+(testing \"Something should work\"
+  (is (something-working?)))"
+
+    "
+(defstruct employee
+  :name :id)")
+
+  (when-indenting-it "should support block-2 expressions"
+    "
+(are [x y]
+     (= x y)
+  2 3
+  4 5
+  6 6)"
+
+    "
+(as-> {} $
+  (assoc $ :hello \"World\"))"
+
+    "
+(as-> {}
+      my-map
+  (assoc my-map :hello \"World\"))"
+
+    "
+(defrecord MyThingR []
+  IProto
+  (foo [this x] x))")
+
+  (when-indenting-it "should support inner-0 expressions"
+    "
+(fn named-lambda [x]
+  (+ x x))"
+
+    "
+(defmethod hello :world
+  [arg1 arg2]
+  (+ arg1 arg2))"
+
+    "
+(reify
+  AutoCloseable
+  (close
+    [this]
+    (is properly indented)))")
+
+  ;; Additional per-form tests for commonly used forms
+
+  (when-indenting-it "should support block-0 forms"
+    "
+(comment
+  (+ 1 2)
+  (println \"hello\"))"
+
+    "
+(cond
+  (even? x) \"even\"
+  (odd? x) \"odd\")"
+
+    "
+(delay
+  (expensive-computation))"
+
+    "
+(go
+  (<! ch)
+  (>! ch val))"
+
+    "
+(thread
+  (do-something)
+  (do-more))"
+
+    "
+(finally
+  (cleanup))"
+
+    "
+(with-out-str
+  (println \"hello\"))"
+
+    "
+(alt!
+  ch1 ([v] (handle v))
+  ch2 ([v] (other v)))"
+
+    "
+(alt!!
+  ch1 ([v] (handle v))
+  ch2 ([v] (other v)))")
+
+  (when-indenting-it "should support block-1 forms"
+    "
+(let [a 1
+      b 2]
+  (+ a b))"
+
+    "
+(let* [a 1]
+  a)"
+
+    "
+(if (pos? x)
+  (inc x)
+  (dec x))"
+
+    "
+(when (pos? x)
+  (println x)
+  (inc x))"
+
+    "
+(when-not (nil? x)
+  (println x))"
+
+    "
+(if-let [x (foo)]
+  (bar x)
+  (baz))"
+
+    "
+(when-let [x (foo)]
+  (bar x))"
+
+    "
+(if-some [x (foo)]
+  (bar x)
+  nil)"
+
+    "
+(when-some [x (foo)]
+  (bar x))"
+
+    "
+(when-first [x coll]
+  (println x))"
+
+    "
+(binding [*out* writer]
+  (println \"hello\"))"
+
+    "
+(loop [i 0]
+  (when (< i 10)
+    (recur (inc i))))"
+
+    "
+(for [x (range 10)
+      y (range 10)]
+  (* x y))"
+
+    "
+(doseq [x (range 10)]
+  (println x))"
+
+    "
+(dotimes [i 10]
+  (println i))"
+
+    "
+(doto (java.util.HashMap.)
+  (.put \"a\" 1)
+  (.put \"b\" 2))"
+
+    "
+(while (.hasNext iter)
+  (.next iter))"
+
+    "
+(with-open [r (io/reader f)]
+  (slurp r))"
+
+    "
+(with-redefs [foo bar]
+  (test-something))"
+
+    "
+(locking lock
+  (swap! state inc))"
+
+    "
+(ns my.namespace
+  (:require
+   [clojure.string :as str]))"
+
+    "
+(if-not (empty? coll)
+  (first coll)
+  nil)"
+
+    "
+(cond->> x
+  (pos? x) inc
+  (even? x) (* 2))"
+
+    "
+(go-loop [i 0]
+  (when (< i 10)
+    (recur (inc i))))"
+
+    "
+(with-local-vars [x 1]
+  (var-set x 2))"
+
+    "
+(match x
+  [1 2] \"pair\"
+  :else \"other\")")
+
+  (when-indenting-it "should support block-2 forms"
+    "
+(condp = x
+  1 \"one\"
+  2 \"two\"
+  \"other\")"
+
+    "
+(catch Exception e
+  (handle-error e))"
+
+    "
+(proxy [ActionListener] []
+  (actionPerformed [e]
+    (println e)))"
+
+    "
+(deftype MyType [field]
+  SomeProtocol
+  (some-method [this]
+    field))")
+
+  (when-indenting-it "should support inner-0 forms"
+    "
+(defn foo
+  [x]
+  (+ x 1))"
+
+    "
+(defn- private-fn
+  [x]
+  (* x 2))"
+
+    "
+(def my-var
+  42)"
+
+    "
+(defonce state
+  (atom {}))"
+
+    "
+(defmacro my-macro
+  [& body]
+  `(do ~@body))"
+
+    "
+(defmulti area
+  :shape)"
+
+    "
+(deftest my-test
+  (is (= 1 1)))"
+
+    "
+(use-fixtures :once
+  my-fixture)"
+
+    "
+(fdef ::my-fn
+  :args (s/cat :x int?)
+  :ret int?)")
+
+  (when-indenting-it "should support inner-1 forms (method nesting)"
+    "
+(defprotocol MyProto
+  (method-a [this])
+  (method-b [this x]
+    \"docstring\"))"
+
+    "
+(definterface MyInterface
+  (^void doSomething [])
+  (^String getName []))"
+
+    "
+(extend-type String
+  MyProto
+  (method-a [this]
+    (str this)))"
+
+    "
+(extend-protocol MyProto
+  String
+  (method-a [this]
+    (str this)))"
+
+    "
+(defrecord MyRecord [a b]
+  MyProto
+  (method-a [this]
+    (:a this)))"
+
+    "
+(deftype MyImpl [state]
+  MyProto
+  (method-a [this]
+    @state))"
+
+    "
+(reify MyProto
+  (method-a [this]
+    42))"
+
+    "
+(proxy [Thread] []
+  (run []
+    (println \"running\")))")
+
+  (when-indenting-it "should support inner-2 forms (letfn)"
+    "
+(letfn [(add [x y]
+          (+ x y))
+        (mul [x y]
+          (* x y))]
+  (add (mul 2 3) 4))")
+
+  (when-indenting-it "should support threading macros"
+    "
+(-> x
+    (assoc :foo 1)
+    (update :bar inc))"
+
+    "
+(->> (range 10)
+     (filter even?)
+     (map inc))")
+
+  (when-indenting-it "should align threading macro args with the first arg"
+    ;; Not with the previous sibling, which can be the last of several forms
+    ;; on the line above, a trailing comment, or the start of a multi-line form.
+    "
+(->> app
+     (http/get-router)
+     (first) (last) :interceptors
+     (mapv :name))"
+
+    "
+(->> tx-data
+     (group-by :e) ; group by entity
+     (map summarize))"
+
+    "
+(some-> request
+        (assoc :user user) (assoc :roles roles)
+        (handler))"
+
+    "
+(-> s
+    (str/replace #\"-\"
+                 \"\")
+    (str/upper-case))"
+
+    "
+(->>
+ xs
+ (map inc) (filter odd?)
+ (reduce +))")
+
+  (it "should prioritize custom semantic indentation rules"
+    (with-clojure-ts-buffer "
+(are [x y]
+     (= x y)
+  2 3
+  4 5
+  6 6)"
+      (setopt clojure-ts-semantic-indent-rules '(("are" . ((:block 1)))))
+      (indent-region (point-min) (point-max))
+      (prog1
+          (expect (buffer-string) :to-equal "
+(are [x y]
+  (= x y)
+  2 3
+  4 5
+  6 6)")
+        ;; `setopt' cannot set variable locally so we need to restore it's
+        ;; original value.
+        (setopt clojure-ts-semantic-indent-rules nil))))
+
+  (when-indenting-it "should indent collections elements with metadata correctly"
+    "
+(def x
+  [a b [c ^:foo
+        d
+        e]])"
+
+    "
+#{x
+  y ^:foo
+  z}"
+
+    "
+{:hello ^:foo
+ \"world\"
+ :foo
+ \"bar\"}")
+
+  (when-indenting-it "should indent body of special forms correctly considering metadata"
+    "
+(let [result ^long
+      (if true
+        1
+        2)])")
+
+  (when-indenting-it "should not count metadata as an argument of block forms"
+    ;; Each form indents the same with and without the type hint.
+    "
+(doto ^java.util.ArrayList
+ (java.util.ArrayList.)
+  (.add 1))"
+
+    "
+(doto
+ (java.util.ArrayList.)
+  (.add 1))"
+
+    "
+(condp = ^String
+       (str x)
+  \"a\" 1)"
+
+    "
+(let ^:no-check
+ [a 1]
+  a)")
+
+  (when-indenting-it "should not count comments as arguments of block forms"
+    "
+(let ;; bindings
+ [a 1]
+  a)"
+
+    "
+(condp = ;; compare
+       (str x)
+  \"a\" 1)")
+
+  (when-indenting-it "should not take a comment for the body of block 0 forms"
+    "
+(comment ;; scratch
+  (start-server)
+  (stop-server))")
+
+  (when-indenting-it "should indent a block form like a call when its body starts on the first line"
+    "
+(if (pos? x) :pos
+    :neg)"
+
+    "
+(let [a 1] (foo a)
+     (bar a))"
+
+    "
+(defprotocol P (foo [this])
+             (bar [this]))"
+
+    ;; The metadata starts the body.
+    "
+(do ^:foo
+ (a))")
+
+  (when-indenting-it "should count discarded forms as elements of block forms"
+    "
+(when #_debug c
+      a)"
+
+    "
+(let [a 1] #_x
+     a)"
+
+    "
+(do #_x
+    a)"
+
+    "
+(when c
+  #_x
+  a)")
+
+  (when-indenting-it "should not count metadata, comments or discarded forms for inner rules with an index"
+    "
+(letfn ;; local fns
+ [(f [x]
+    x)]
+  (f 1))"
+
+    "
+(letfn ^:foo
+ [(f [x]
+    x)]
+  (f 1))"
+
+    "
+(letfn #_[(g [] 1)] [(f [x]
+                       x)]
+       (f 1))")
+
+  (it "should indent a form on the line after its reader prefix"
+    ;; No rule used to match these lines, so they kept whatever indentation
+    ;; they had.  Start from no indentation at all.
+    (dolist (expected '("
+(def table
+  ['
+   [identity int? pos-int?]
+   [0 true false]])"
+                        "
+`(let [y# ~
+       x]
+   y#)"
+                        "
+(swap! state assoc :n @
+       (:counter state))"
+                        "
+{:get #'
+ handle-get}"
+                        "
+(def q '
+  (a b c))"))
+      (with-clojure-ts-buffer (replace-regexp-in-string "\n +" "\n" expected)
+        (indent-region (point-min) (point-max))
+        (expect (buffer-string) :to-equal expected))))
+
+  (it "should align call arguments with the first one, past comments and metadata"
+    ;; Start from no indentation at all, as some of these lines used to keep
+    ;; whatever indentation they had.
+    (dolist (expected '("
+(str
+ ^String (.toUpperCase s)
+ \"!\")"
+                        "
+(^:private foo a
+               b)"
+                        "
+(foo ;; why
+ a
+ b)"
+                        "
+(foo
+ ;; why
+ a
+ b)"
+                        "
+(foo #_x
+     a
+     b)"
+                        "
+(foo
+ #_x a
+ b)"
+                        "
+(
+ foo a
+     b)"))
+      (with-clojure-ts-buffer (replace-regexp-in-string "\n +" "\n" expected)
+        (indent-region (point-min) (point-max))
+        (expect (buffer-string) :to-equal expected))))
+
+  (when-indenting-with-point-it "should align a blank line with the first argument"
+    "
+(foo a
+|
+ b)"
+
+    "
+(foo a
+     |
+ b)")
+
+  (when-indenting-with-point-it "should not align a blank line with a comment after the head"
+    "
+(foo ;; why
+|
+ a)"
+
+    "
+(foo ;; why
+ |
+ a)")
+
+  (it "should pick up dynamic indentation rules from clojure-ts-get-indent-function"
+    (with-clojure-ts-buffer "
+(defmacro my-with-in-str
+  \"[DOCSTRING]\"
+  {:style/indent 1}
+  [s & body]
+  ~@body)
+
+(my-with-in-str \"34\"
+(prompt \"How old are you?\"))"
+      (setq-local clojure-ts-get-indent-function #'cider--get-symbol-indent-mock)
+      (indent-region (point-min) (point-max))
+      (expect (buffer-string) :to-equal "
+(defmacro my-with-in-str
+  \"[DOCSTRING]\"
+  {:style/indent 1}
+  [s & body]
+  ~@body)
+
+(my-with-in-str \"34\"
+  (prompt \"How old are you?\"))"))
+
+    (with-clojure-ts-buffer "
+(defmacro my-letfn
+  \"[DOCSTRING]\"
+  {:style/indent [1 [[:defn]] :form]}
+  [fnspecs & body]
+  ~@body)
+
+(my.alias/my-letfn [(twice [x]
+                    (* x 2))
+                   (six-times [y]
+                  (* (twice y) 3))]
+(println \"Twice 15 =\" (twice 15))
+(println \"Six times 15 =\" (six-times 15)))"
+      (setq-local clojure-ts-get-indent-function #'cider--get-symbol-indent-mock)
+      (indent-region (point-min) (point-max))
+      (expect (buffer-string) :to-equal "
+(defmacro my-letfn
+  \"[DOCSTRING]\"
+  {:style/indent [1 [[:defn]] :form]}
+  [fnspecs & body]
+  ~@body)
+
+(my.alias/my-letfn [(twice [x]
+                      (* x 2))
+                    (six-times [y]
+                      (* (twice y) 3))]
+  (println \"Twice 15 =\" (twice 15))
+  (println \"Six times 15 =\" (six-times 15)))")))
+
+  (it "should read dynamic indentation specs the way clojure-mode does"
+    (dolist (expected '("
+(my-defn foo [x]
+  x)"
+                        "
+(my-extend Proto
+  String
+  (foo [x]
+    x))"
+                        "
+(my-reify Proto
+  (foo [x]
+    x))"
+                        "
+(my.alias/my-letfn [(f [x]
+                      x)]
+  (g (h
+      x)))"
+                        "
+(my-when true
+  (foo))"))
+      (with-clojure-ts-buffer (replace-regexp-in-string "\n +" "\n" expected)
+        (setq-local clojure-ts-get-indent-function #'cider--get-symbol-indent-mock)
+        (indent-region (point-min) (point-max))
+        (expect (buffer-string) :to-equal expected))))
+
+  (it "should find the rule for the form itself anywhere in the rule list"
+    (with-clojure-ts-buffer "
+(my-proto Foo
+(bar [x]
+x))"
+      (unwind-protect
+          (progn
+            (setopt clojure-ts-semantic-indent-rules
+                    '(("my-proto" . ((:inner 1) (:block 1)))))
+            (indent-region (point-min) (point-max))
+            (expect (buffer-string) :to-equal "
+(my-proto Foo
+  (bar [x]
+    x))"))
+        (setopt clojure-ts-semantic-indent-rules nil))))
+
+  (when-indenting-fixed-it "should indent children of a list with 2 spaces if first node is a symbol"
+    "(ns indentation
+  (:require
+   [clojure.string :as str])
+  (:import
+   (java.util Date
+     UUID)))")
+
+  (it "should indent a form on the line after its reader prefix in fixed style"
+    (dolist (expected '("
+(swap! state assoc :n @
+  (:counter state))"
+                        "
+['
+ [a b]]"))
+      (with-temp-buffer
+        (let ((clojure-ts-indent-style 'fixed))
+          (clojure-ts-mode)
+          (insert (replace-regexp-in-string "\n +" "\n" expected))
+          (indent-region (point-min) (point-max))
+          (expect (buffer-string) :to-equal expected)))))
+
+  (it "should indent function literals, reader conditionals and tagged literals in fixed style"
+    ;; No rule used to match these lines, so they kept whatever indentation
+    ;; they had.  Start from no indentation at all.
+    (dolist (expected '("
+#(foo %
+  bar)"
+                        "
+#?(:clj 1
+   :cljs 2)"
+                        "
+[#?@(:clj [1 2]
+     :cljs [3 4])]"
+                        "
+(foo #js
+     {:a 1})"))
+      (with-temp-buffer
+        (let ((clojure-ts-indent-style 'fixed))
+          (clojure-ts-mode)
+          (insert (replace-regexp-in-string "\n +" "\n" expected))
+          (indent-region (point-min) (point-max))
+          (expect (buffer-string) :to-equal expected)))))
+
+  (when-indenting-fixed-it "should find the head symbol of a list past metadata and comments"
+    "
+(^:private foo a
+  bar)"
+
+    "
+(;; why
+  foo a
+  bar)")
+
+  (when-indenting-fixed-it "should indent namespaced maps correctly"
+    "
+#:foo{:bar 1
+      :baz 2}"))
+
+(describe "clojure-ts-align"
+  (it "should handle improperly indented content"
+    (with-clojure-ts-buffer-point "
+(let [a-long-name 10
+b |20])"
+      (call-interactively #'clojure-ts-align)
+      (expect (buffer-string) :to-equal "
+(let [a-long-name 10
+      b           20])"))
+
+    (with-clojure-ts-buffer-point "
+(let [^long my-map {:hello \"World\" ;Hello
+ :foo
+       ^String (str \"Foo\" \"Bar\")
+ :number ^long 132
+                    :zz \"hello\"}
+      another| {:this ^{:hello \"world\"} \"is\"
+                    :a    #long \"1234\"
+ :b {:this \"is\"
+ :nested \"map\"}}])"
+      (call-interactively #'clojure-ts-align)
+      (expect (buffer-string) :to-equal "
+(let [^long my-map {:hello  \"World\" ;Hello
+                    :foo
+                    ^String (str \"Foo\" \"Bar\")
+                    :number ^long 132
+                    :zz     \"hello\"}
+      another      {:this ^{:hello \"world\"} \"is\"
+                    :a    #long \"1234\"
+                    :b    {:this   \"is\"
+                           :nested \"map\"}}])"))
+
+    (with-clojure-ts-buffer-point "
+(condp = 2
+|123 \"Hello\"
+99999 \"World\"
+234 nil)"
+      (call-interactively #'clojure-ts-align)
+      (expect (buffer-string) :to-equal "
+(condp = 2
+  123   \"Hello\"
+  99999 \"World\"
+  234   nil)")))
+
+  (it "should not align reader conditionals by defaul"
+    (with-clojure-ts-buffer-point "
+#?(:clj 2
+   |:cljs 2)"
+      (call-interactively #'clojure-ts-align)
+      (expect (buffer-string) :to-equal "
+#?(:clj 2
+   :cljs 2)")))
+
+  (it "should align reader conditionals when clojure-ts-align-reader-conditionals is true"
+    (with-clojure-ts-buffer-point "
+#?(:clj 2
+   |:cljs 2)"
+      (setq-local clojure-ts-align-reader-conditionals t)
+      (call-interactively #'clojure-ts-align)
+      (expect (buffer-string) :to-equal "
+#?(:clj  2
+   :cljs 2)")))
+
+  (it "should remove extra commas"
+    (with-clojure-ts-buffer-point "{|:a 2, ,:c 4}"
+      (call-interactively #'clojure-ts-align)
+      (expect (buffer-string) :to-equal "{:a 2, :c 4}")))
+
+  (it "should align binding forms added to clojure-ts-align-binding-forms after loading"
+    ;; As in .dir-locals.el: the query used to be compiled once, when the
+    ;; package loaded, so later changes had no effect.
+    (with-clojure-ts-buffer-point "
+(my-let [|a 1
+         bbbb 2])"
+      (setq-local clojure-ts-align-binding-forms
+                  (cons "my-let" clojure-ts-align-binding-forms))
+      (call-interactively #'clojure-ts-align)
+      (expect (buffer-string) :to-equal "
+(my-let [a    1
+         bbbb 2])")))
+
+  (it "should align cond forms added to clojure-ts-align-cond-forms after loading"
+    (with-clojure-ts-buffer-point "
+(cond
+  |(= a 1) :one
+  (= bbbbbb 22222) :two)"
+      (setq-local clojure-ts-align-cond-forms nil)
+      (call-interactively #'clojure-ts-align)
+      (expect (buffer-string) :to-equal "
+(cond
+  (= a 1) :one
+  (= bbbbbb 22222) :two)")
+      (setq-local clojure-ts-align-cond-forms '("cond"))
+      (call-interactively #'clojure-ts-align)
+      (expect (buffer-string) :to-equal "
+(cond
+  (= a 1)          :one
+  (= bbbbbb 22222) :two)")))
+
+  (it "should not fail to align a cond form without a semantic indentation rule"
+    ;; A symbol added to `clojure-ts-align-cond-forms' need not have a matching
+    ;; semantic indentation rule.  When it has none, alignment must fall back
+    ;; gracefully instead of raising `(wrong-type-argument listp :not-found)'.
+    (with-clojure-ts-buffer-point "
+(my-cond
+ |:a 1
+ :bbbb 2
+ :cc 3)"
+      (setq-local clojure-ts-align-cond-forms (cons "my-cond" clojure-ts-align-cond-forms))
+      (call-interactively #'clojure-ts-align)
+      (expect (buffer-string) :to-equal "
+(my-cond
+ :a    1
+ :bbbb 2
+ :cc   3)")))
+
+  (it "should skip the special arguments of a cond form whose block rule isn't first"
+    (with-clojure-ts-buffer-point "
+(my-condp = x
+  |1 :one
+  22222 :two)"
+      (unwind-protect
+          (progn
+            (setopt clojure-ts-semantic-indent-rules
+                    '(("my-condp" . ((:inner 1) (:block 2)))))
+            (setq-local clojure-ts-align-cond-forms
+                        (cons "my-condp" clojure-ts-align-cond-forms))
+            (call-interactively #'clojure-ts-align)
+            (expect (buffer-string) :to-equal "
+(my-condp = x
+  1     :one
+  22222 :two)"))
+        (setopt clojure-ts-semantic-indent-rules nil)))))
+
+(describe "clojure-ts-align-forms-automatically"
+  ;; Copied from `clojure-mode'
+  (when-aligning-it "should basic forms"
+    "
+{:this-is-a-form b
+ c               d}"
+
+    "
+{:this-is b
+ c        d}"
+
+    "
+{:this b
+ c     d}"
+
+    "
+{:a b
+ c  d}"
+
+    "
+(let [this-is-a-form b
+      c              d])"
+
+    "
+(let [this-is b
+      c       d])"
+
+    "
+(let [this b
+      c    d])"
+
+    "
+(let [a b
+      c d])")
+
+  (when-aligning-it "should handle function literals"
+    "
+#(let [hello 1
+       foo   \"hone\"]
+   (pringln hello))"
+
+    "
+^{:some :metadata} #(let [foo     %
+                          bar-zzz %]
+                      foo)")
+
+  (when-aligning-it "should handle a blank line"
+    "
+(let [this-is-a-form b
+      c              d
+
+      another form
+      k       g])"
+
+    "
+{:this-is-a-form b
+ c               d
+
+ :another form
+ k        g}")
+
+  (when-aligning-it "should handle basic forms (reversed)"
+    "
+{c               d
+ :this-is-a-form b}"
+    "
+{c        d
+ :this-is b}"
+    "
+{c     d
+ :this b}"
+    "
+{c  d
+ :a b}"
+
+    "
+(let [c              d
+      this-is-a-form b])"
+
+    "
+(let [c       d
+      this-is b])"
+
+    "
+(let [c    d
+      this b])"
+
+    "
+(let [c d
+      a b])")
+
+  (when-aligning-it "should handle multiple words"
+    "
+(cond this     is    just
+      a        test  of
+      how      well
+      multiple words will work)")
+
+  (when-aligning-it "should handle nested maps"
+    "
+{:a    {:a    :a
+        :bbbb :b}
+ :bbbb :b}")
+
+  (when-aligning-it "should regard end as a marker"
+    "
+{:a {:a                                :a
+     :aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa :a}
+ :b {:a  :a
+     :aa :a}}")
+
+  (it "should align the forms at the end of the region after reindenting"
+    ;; Reindenting adds whitespace, which moves the end of the region.  The
+    ;; forms near the end used to be left unaligned until a second pass.
+    (let ((clojure-ts-align-forms-automatically t))
+      (with-clojure-ts-buffer "
+(let [a 1
+bbbbbb 2
+{:keys [c]} x]
+c)
+(cond
+(= a 1) :one
+(= bbbbbb 22222) :two
+:else :other)
+(condp = x
+1 :one
+222 :two)
+(case x
+:a 1
+:bbbbb 2)"
+        (indent-region (point-min) (point-max))
+        (expect (buffer-string) :to-equal "
+(let [a           1
+      bbbbbb      2
+      {:keys [c]} x]
+  c)
+(cond
+  (= a 1)          :one
+  (= bbbbbb 22222) :two
+  :else            :other)
+(condp = x
+  1   :one
+  222 :two)
+(case x
+  :a     1
+  :bbbbb 2)"))))
+
+  (it "should align when the option is turned on after the mode starts"
+    (with-clojure-ts-buffer "{:a 1\n:bbb 2}"
+      (setq-local clojure-ts-align-forms-automatically t)
+      (indent-region (point-min) (point-max))
+      (expect (buffer-string) :to-equal "{:a   1\n :bbb 2}")))
+
+  (when-aligning-it "should handle trailing commas"
+    "
+{:a {:a  :a,
+     :aa :a},
+ :b {:a  :a,
+     :aa :a}}")
+
+  (when-aligning-it "should handle standard reader conditionals"
+    "
+#?(:clj  2
+   :cljs 2)")
+
+  (when-aligning-it "should handle splicing reader conditional"
+    "
+#?@(:clj  [2]
+    :cljs [2])")
+
+  (when-aligning-it "should handle sexps broken up by line comments"
+    "
+(let [x  1
+      ;; comment
+      xx 1]
+  xx)"
+
+    "
+{:x   1
+ ;; comment
+ :xxx 2}"
+
+    "
+(case x
+  :aa 1
+  ;; comment
+  :a  2)")
+
+  (when-aligning-it "should work correctly when margin comments appear after nested, multi-line, non-terminal sexps"
+    "
+(let [x  {:a 1
+          :b 2} ; comment
+      xx 3]
+  x)"
+
+    "
+{:aa {:b  1
+      :cc 2} ;; comment
+ :a  1}}"
+
+    "
+(case x
+  :a  (let [a  1
+            aa (+ a 1)]
+        aa); comment
+  :aa 2)")
+
+  (when-aligning-it "should handle a margin comment before a blank line at the end"
+    "
+{:a 1 ;; comment
+
+ }"
+
+    "
+(are [x y]
+     (= x y)
+  1 2 ;; one
+  3 4 ;; three
+
+  )")
+
+  (when-aligning-it "should align a binding with metadata after a line comment"
+    "
+(let [a              1
+      ;; comment
+      ^String string 2]
+  a)")
+
+  (when-aligning-it "should work correctly when there are discard forms"
+    "{:map  \"with\"
+ :some #_\"ignored\" \"form\"}"
+
+    "{:map      \"with\"
+ :multiple \"ignored\"
+ #_#_:forms \"foo\"}")
+
+  (when-aligning-it "should align are, unqualified or from clojure.test"
+    "
+(are [x y]
+     (= x y)
+  1     1
+  22222 3)"
+
+    "
+(clojure.test/are [x y]
+                  (= x y)
+  1     1
+  22222 3)")
+
+  (when-aligning-it "should support namespaced maps"
+    "#:hello {:world          true
+         :foo            \"bar\"
+         :some-very-long \"value\"}")
+
+  (when-aligning-it "should support auto-resolved namespaced maps"
+    "#::{:world true
+    :foo   \"bar\"}"
+
+    "#::alias{:a   1
+         :bbb 2}")
+
+  (it "should align a line ending in a form after metadata and extra spaces"
+    ;; Fixing the space after the metadata used to leave the node it
+    ;; searched outdated for the next line.
+    (let ((clojure-ts-align-forms-automatically t))
+      (with-clojure-ts-buffer "{:a ^:m  b\n:ccc d}"
+        (indent-region (point-min) (point-max))
+        (expect (buffer-string) :to-equal "{:a   ^:m b\n :ccc d}")))))

@@ -3,8 +3,8 @@
 ;;; Commentary:
 ;; Emacs loads this before the package system and before drawing the first
 ;; frame, so it holds what must be in effect before either: turning off the
-;; package system, the environment for native compilation, and which UI
-;; elements the frame has.
+;; package system, the environment for native compilation, and turning off
+;; the menu bar.
 
 ;;; Code:
 
@@ -41,16 +41,13 @@
 ;; --------------------------------------------------
 ;; Frame
 
-;; Turning UI elements off here, as frame parameters, means they're never
-;; drawn; doing it in init.el makes them flash at startup.
+;; Emacs runs in a terminal only, where the menu bar is the one UI element
+;; drawn.  Turning it off here, as a frame parameter, means it's never
+;; drawn; doing it in init.el makes it flash at startup.
 (push '(menu-bar-lines . 0) default-frame-alist)
-(push '(tool-bar-lines . 0) default-frame-alist)
-(push '(vertical-scroll-bars) default-frame-alist)
 
-;; Keep the modes' variables in sync with the frame parameters, so toggling
-;; one of these modes later works on the first try
-(setq menu-bar-mode nil
-      tool-bar-mode nil
-      scroll-bar-mode nil)
+;; Keep the mode's variable in sync with the frame parameter, so toggling
+;; the mode later works on the first try
+(setq menu-bar-mode nil)
 
 ;;; early-init.el ends here

@@ -7,7 +7,9 @@
 ;; used at all.
 ;;
 ;; init.el loads this file and calls `Minimalist/site-lisp-activate', which
-;; puts every package on `load-path' and loads its autoloads.
+;; puts every package on `load-path' and loads its autoloads.  In a fresh
+;; clone nothing is built yet, so it runs the build below first; that
+;; first start takes a minute or two.
 ;;
 ;; A package's Lisp files are in its directory, or in a lisp/ or elisp/
 ;; subdirectory if it has one.  Manuals are .texi files in the directory or
@@ -68,30 +70,57 @@ one (magit, with-editor, geiser), otherwise its top directory."
 
 (defvar Info-additional-directory-list)
 
+(defun Minimalist/site-lisp-unbuilt (packages)
+  "The PACKAGES that have no autoloads file yet."
+  (seq-remove (lambda (package)
+                (file-exists-p (Minimalist/site-lisp-autoloads-file package)))
+              packages))
+
+(defun Minimalist/site-lisp-build-in-subprocess ()
+  "Run `Minimalist/site-lisp-build' in a batch Emacs and wait for it.
+The output goes to the *site-lisp build* buffer.  Returns non-nil if
+everything built."
+  (let ((buffer (get-buffer-create "*site-lisp build*")))
+    (message "Building the packages in site-lisp/, this takes a minute...")
+    (with-current-buffer buffer
+      (erase-buffer))
+    (zerop (call-process (expand-file-name invocation-name invocation-directory)
+                         nil buffer nil
+                         "--batch"
+                         "-l" (expand-file-name "site-lisp.el"
+                                                Minimalist/site-lisp-root)
+                         "-f" "Minimalist/site-lisp-build"))))
+
 (defun Minimalist/site-lisp-activate ()
-  "Add every package to `load-path', load its autoloads and add its manual."
+  "Add every package to `load-path', load its autoloads and add its manual.
+Packages that were never built, as in a fresh clone, are built first."
   ;; Only once Info is first used, so startup doesn't check for manuals
   (with-eval-after-load 'info
     (dolist (dir (Minimalist/site-lisp-manual-locations))
       (when (file-exists-p (expand-file-name "dir" dir))
         (add-to-list 'Info-additional-directory-list dir t))))
-  (let ((missing nil))
-    (dolist (package (Minimalist/site-lisp-packages))
+  (let ((packages (Minimalist/site-lisp-packages)))
+    (when (and (Minimalist/site-lisp-unbuilt packages)
+               (not (Minimalist/site-lisp-build-in-subprocess)))
+      (display-warning 'site-lisp "Some packages failed to build; \
+see the *site-lisp build* buffer"))
+    (dolist (package packages)
       (add-to-list 'load-path (cdr package))
       (let ((autoloads (Minimalist/site-lisp-autoloads-file package)))
-        (if (file-exists-p autoloads)
-            (load autoloads nil t)
-          (push (car package) missing))))
-    (when missing
+        (when (file-exists-p autoloads)
+          (load autoloads nil t))))
+    (when-let* ((missing (Minimalist/site-lisp-unbuilt packages)))
       (display-warning
        'site-lisp
-       (format "Not built yet: %s.  Run from ~/.emacs.d:
+       (format "Not built: %s.  Run from ~/.emacs.d:
 emacs --batch -l site-lisp/site-lisp.el -f Minimalist/site-lisp-build"
-               (string-join (nreverse missing) ", "))))))
+               (mapconcat #'car missing ", "))))))
 
+;; Not every -test.el or -debug.el: cider-test.el and cider-debug.el are
+;; CIDER's test runner and debugger.
 (defconst Minimalist/site-lisp-skip-regexp
-  (rx (or (seq (or "-test" "-tests" "-autoloads" "-pkg" "-debug") ".el" eos)
-          (seq bos (or "test" "build") ".el" eos)))
+  (rx (or (seq (or "-tests" "-autoloads" "-pkg") ".el" eos)
+          (seq bos (or "test" "build" "yasnippet-debug") ".el" eos)))
   "Files that aren't part of a package proper: tests, build scripts, etc.")
 
 (defun Minimalist/site-lisp-build-manuals ()

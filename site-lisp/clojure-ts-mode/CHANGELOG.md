@@ -1,0 +1,230 @@
+# Changelog
+
+<!-- Entries are one line per item, so the line-length rule doesn't fit this file. -->
+<!-- markdownlint-disable MD013 -->
+
+## main (unreleased)
+
+## 0.7.0 (2026-11-07)
+
+- [#133](https://github.com/clojure-emacs/clojure-ts-mode/pull/133): Fix indentation of namespaced maps in `fixed` indentation style.
+- [#130](https://github.com/clojure-emacs/clojure-ts-mode/pull/130): Add project root detection for ClojureCLR project.
+- [88e92ee](https://github.com/clojure-emacs/clojure-ts-mode/commit/88e92ee2f06182a7d3420ff988723569f6b181d6): Add missing `defstruct` semantic indentation rule.
+- [c695836](https://github.com/clojure-emacs/clojure-ts-mode/commit/c69583645f8276d224d78a1f2d9b65b5287c7eeb): Fix font-lock issues: duplicate query, missing `definline` metadata docstring.
+- [68e98ed](https://github.com/clojure-emacs/clojure-ts-mode/commit/68e98edf3de86abdc8fdd72574e086a0244b46fd): Fix missing builtin symbols in font-lock regexp.
+- [#132](https://github.com/clojure-emacs/clojure-ts-mode/pull/132): Improve performance for imenu, font-lock and indentation.
+- [#145](https://github.com/clojure-emacs/clojure-ts-mode/pull/145): Improve performance for `clojure-ts-align` by caching indentation rules.
+- [#161](https://github.com/clojure-emacs/clojure-ts-mode/pull/161): Fix `clojure-ts-clojurescript-mode` asking to install the jsdoc grammar on Emacs 31, and failing to start without it.
+- [#161](https://github.com/clojure-emacs/clojure-ts-mode/pull/161): Stop running the hooks of `js-ts-mode` and `c++-ts-mode` (and `prog-mode-hook`) in a hidden buffer when `clojure-ts-clojurescript-mode` or `clojure-ts-jank-mode` starts.
+- [#147](https://github.com/clojure-emacs/clojure-ts-mode/issues/147): Fix `clojure-ts-align-forms-automatically` having no effect in `clojure-ts-clojurescript-mode` and `clojure-ts-jank-mode`.
+- [#161](https://github.com/clojure-emacs/clojure-ts-mode/pull/161): Make `M-q` (`prog-fill-reindent-defun`) reindent the whole top-level form again on Emacs 31, instead of just the innermost one.
+- [#161](https://github.com/clojure-emacs/clojure-ts-mode/pull/161): Fix `clojure-ts-update-ns` replacing unrelated text instead of the ns name when `clojure-ts-cache-ns` is enabled.
+- [#161](https://github.com/clojure-emacs/clojure-ts-mode/pull/161): Fix `clojure-ts-cycle-privacy` changing the next definition, or a name that merely starts with `def`, when point isn't in a definition.
+- [#161](https://github.com/clojure-emacs/clojure-ts-mode/pull/161): Fix `clojure-ts-cycle-conditional` mangling namespace-qualified forms, swapping the wrong parts of an `if` with discarded forms, metadata or no else branch, and not working in function literals.
+- [#161](https://github.com/clojure-emacs/clojure-ts-mode/pull/161): Fix `clojure-ts-cycle-not` around metadata: it dropped the metadata of the form it unwrapped, left a new `not` inside it, garbled forms whose head symbol has metadata, and could signal `args-out-of-range`.
+- [#161](https://github.com/clojure-emacs/clojure-ts-mode/pull/161): Make the threading and unwinding commands refuse to work around metadata, `#_` forms and reader conditionals, which they used to garble.
+- [#161](https://github.com/clojure-emacs/clojure-ts-mode/pull/161): Fix `clojure-ts-add-arity` wrapping the dispatch value of a `defmethod` when it's a vector.
+- [#161](https://github.com/clojure-emacs/clojure-ts-mode/pull/161): Stop the refactoring commands from changing a nearby form when point is on a blank line before, between or after forms.
+- [#161](https://github.com/clojure-emacs/clojure-ts-mode/pull/161): Fix converting collections with metadata: a quoted list with metadata after the quote (`'^:foo (1 2)`) failed to convert, and converting to a quoted list put the quote after the metadata.
+- [#153](https://github.com/clojure-emacs/clojure-ts-mode/pull/153): Align threading macro arguments with the first argument instead of the previous one, which went wrong after a line with several forms or a trailing comment.
+- [#154](https://github.com/clojure-emacs/clojure-ts-mode/pull/154): Fix semantic indentation of forms with metadata or a comment before an argument or the body, like `(doto ^Foo`, `(let ;; bindings` or `(comment ;; scratch`.
+- [#155](https://github.com/clojure-emacs/clojure-ts-mode/pull/155): Fix indentation of a form on the line after its reader prefix (`'`, `` ` ``, `~`, `~@`, `@`, `#'`, `#=`), which no rule matched.
+- [#156](https://github.com/clojure-emacs/clojure-ts-mode/pull/156): Align `clojure.test/are` like `are`: `clojure-ts-align-cond-forms` listed the nonexistent `clojure.core/are` instead.
+- [#157](https://github.com/clojure-emacs/clojure-ts-mode/pull/157): Respect changes to `clojure-ts-align-binding-forms` and `clojure-ts-align-cond-forms` made after the package loads, including buffer-local ones from `.dir-locals.el`.
+- [#159](https://github.com/clojure-emacs/clojure-ts-mode/pull/159): Fix `indent-region` leaving the forms at the end of the region unaligned when indenting makes the text longer.
+- [#160](https://github.com/clojure-emacs/clojure-ts-mode/pull/160): Highlight forms in `clojure-ts-extra-def-forms` as keywords at `treesit-font-lock-level` 4, where they were colored as function calls.
+- [#162](https://github.com/clojure-emacs/clojure-ts-mode/pull/162): Fix the conversion of indent specs from `clojure-ts-get-indent-function` (CIDER's `:style/indent`), which misindented forms indented like `defn`, `reify`, `extend-protocol` or `letfn`.
+- [#162](https://github.com/clojure-emacs/clojure-ts-mode/pull/162): Stop ignoring a `:block` rule that isn't the first rule in its list, in both indentation and cond alignment.
+- [#163](https://github.com/clojure-emacs/clojure-ts-mode/pull/163): Align function call arguments with the first argument even when there's metadata, a comment or a `#_` form before it, instead of leaving a type-hinted first argument and the ones after it unindented.
+- [#165](https://github.com/clojure-emacs/clojure-ts-mode/pull/165): Fix `clojure-ts-semantic-indent-rules` not reaching open buffers when set with `setopt` from a non-Clojure buffer, and being ignored when set with `setq-local` or `let`.
+- [#165](https://github.com/clojure-emacs/clojure-ts-mode/pull/165): Fix `clojure-ts-comment-macro-font-lock-body` and `clojure-ts-extra-def-forms` being ignored in `.dir-locals.el` and when set after the package loads, and a directory-local `clojure-ts-extra-def-forms` applying to other buffers instead.
+- [#165](https://github.com/clojure-emacs/clojure-ts-mode/pull/165): Fix `clojure-ts-indent-style` and `clojure-ts-align-forms-automatically` being ignored in `.dir-locals.el`, and `setopt` of `clojure-ts-indent-style` not reaching open buffers.
+- [#166](https://github.com/clojure-emacs/clojure-ts-mode/pull/166): Indent function literals, reader conditionals and tagged literals in the `fixed` indentation style, and lists whose head symbol has metadata, which got 1 space instead of 2.
+- [#170](https://github.com/clojure-emacs/clojure-ts-mode/pull/170): Indent forms like `if`, `when` or `let` as function calls when their body starts on the first line, like cljfmt and `clojure-mode` do, instead of indenting the rest of the body by 2 spaces.
+- [#170](https://github.com/clojure-emacs/clojure-ts-mode/pull/170): Count forms discarded with `#_` as arguments of forms like `when` or `let` when indenting them, like `clojure-mode` does.
+- [#170](https://github.com/clojure-emacs/clojure-ts-mode/pull/170): Add the `let*` semantic indentation rule from cljfmt.
+- [#171](https://github.com/clojure-emacs/clojure-ts-mode/pull/171): Highlight the names of methods (in `defrecord`, `reify` and the like) and of `letfn` functions as definitions at `treesit-font-lock-level` 4, where they were colored as function calls.
+- [#171](https://github.com/clojure-emacs/clojure-ts-mode/pull/171): Highlight Markdown in the docstrings of the forms in `clojure-ts-extra-def-forms`.
+- [#172](https://github.com/clojure-emacs/clojure-ts-mode/pull/172): Fix `clojure-ts-outline-variant` and `clojure-ts-completion-enabled` being ignored in `.dir-locals.el`.
+- [#172](https://github.com/clojure-emacs/clojure-ts-mode/pull/172): Stop marking `clojure-ts-ensure-grammars`, `clojure-ts-auto-remap` and the options that turn the embedded parsers on and off as safe in `.dir-locals.el`, where they have no effect.
+- [#169](https://github.com/clojure-emacs/clojure-ts-mode/pull/169): Add `clojure-ts-remove-unused-keys` (`C-c C-r k`), which removes the names the top-level form at point destructures from maps but never uses, along with their `:or` defaults.
+- [#164](https://github.com/clojure-emacs/clojure-ts-mode/pull/164): Support `setopt-local` for `clojure-ts-indent-style`, `clojure-ts-extra-def-forms` and `clojure-ts-comment-macro-font-lock-body`, which Emacs 31 refused to set locally and Emacs 32 warned about in `.dir-locals.el`.
+- [#168](https://github.com/clojure-emacs/clojure-ts-mode/pull/168): Indent docstrings like `clojure-mode`, moving the lines indented less than `clojure-ts-docstring-fill-prefix-width` to that column and keeping deeper ones, instead of leaving them alone with `clojure-ts-use-markdown-inline` and flattening them without it.
+- [#174](https://github.com/clojure-emacs/clojure-ts-mode/pull/174): Speed up indentation of forms with many children, like a big `comment` form, which slowed down with the cube of their length.
+- [#175](https://github.com/clojure-emacs/clojure-ts-mode/pull/175): Fix `clojure-ts-align` signalling `treesit-node-outdated` on a line that ends in a form after metadata and more than one space.
+- [#176](https://github.com/clojure-emacs/clojure-ts-mode/pull/176): Fix `clojure-ts-align` signalling an invalid search bound when a comment ends the last line before a blank one, and aligning a binding with metadata after a line comment to the metadata alone.
+
+## 0.6.0 (2025-12-02)
+
+- Add a dedicated mode for editing Joker code. (`clojure-ts-joker-mode`).
+- [#113](https://github.com/clojure-emacs/clojure-ts-mode/pull/113): Fix non-working refactoring commands for Emacs-30.
+- [#114](https://github.com/clojure-emacs/clojure-ts-mode/pull/114): Extend built-in completion to complete keywords and local bindings in `for` and `doseq` forms.
+- [#116](https://github.com/clojure-emacs/clojure-ts-mode/pull/116): Extend built-in completion to complete all imported symbols from an `ns` form.
+- Add documentation and bug reporting commands from `clojure-mode`.
+- [#118](https://github.com/clojure-emacs/clojure-ts-mode/pull/118): Add some ns manipulation functions from `clojure-mode`.
+- Fix a bug in `clojure-ts-add-arity` when body has more than one expression.
+- [#120](https://github.com/clojure-emacs/clojure-ts-mode/issues/120): Fix a bug when symbols with metadata were not listed in imenu.
+- [#124](https://github.com/clojure-emacs/clojure-ts-mode/issues/124): Correctly indent lists that start with a keyword when using the `fixed` indentation style.
+- [#127](https://github.com/clojure-emacs/clojure-ts-mode/issues/127): Fix performance issue for some valid Clojure expressions.
+
+## 0.5.1 (2025-06-17)
+
+- [#109](https://github.com/clojure-emacs/clojure-ts-mode/issues/109): Improve performance by pre-compiling Tree-sitter queries.
+- [#111](https://github.com/clojure-emacs/clojure-ts-mode/pull/111): Set `clojure-ts-completion-at-point-function` only for `clojure-ts-mode` buffers.
+
+## 0.5.0 (2025-06-04)
+
+- [#96](https://github.com/clojure-emacs/clojure-ts-mode/pull/96): Highlight function name properly in `extend-protocol` form.
+- [#96](https://github.com/clojure-emacs/clojure-ts-mode/pull/96): Add support for extend-protocol forms to `clojure-ts-add-arity` refactoring.
+  command.
+- [#99](https://github.com/clojure-emacs/clojure-ts-mode/pull/99): Improve navigation by s-expression by switching to an experimental
+  Clojure grammar.
+- [#99](https://github.com/clojure-emacs/clojure-ts-mode/pull/99): More consistent docstrings highlighting and `fill-paragraph` behavior.
+- [#99](https://github.com/clojure-emacs/clojure-ts-mode/pull/99): Fix bug in `clojure-ts-align` when nested form has extra spaces.
+- [#99](https://github.com/clojure-emacs/clojure-ts-mode/pull/99): Fix bug in `clojure-ts-unwind` when there is only one expression after
+  threading symbol.
+- [#103](https://github.com/clojure-emacs/clojure-ts-mode/issues/103): Introduce `clojure-ts-jank-use-cpp-parser` customization which allows
+  highlighting C++ syntax in Jank `native/raw` forms.
+- [#103](https://github.com/clojure-emacs/clojure-ts-mode/issues/103): Introduce `clojure-ts-clojurescript-use-js-parser` customization which
+  allows highlighting JS syntax in ClojureScript `js*` forms.
+- [#104](https://github.com/clojure-emacs/clojure-ts-mode/pull/104): Introduce the `clojure-ts-extra-def-forms` customization option to specify
+  additional `defn`-like forms that should be fontified.
+- [#108](https://github.com/clojure-emacs/clojure-ts-mode/pull/108): Introduce completion feature and `clojure-ts-completion-enabled`
+  customization.
+
+## 0.4.0 (2025-05-15)
+
+- [#16](https://github.com/clojure-emacs/clojure-ts-mode/issues/16): Introduce `clojure-ts-align`.
+- [#11](https://github.com/clojure-emacs/clojure-ts-mode/issues/11): Enable regex syntax highlighting.
+- [#16](https://github.com/clojure-emacs/clojure-ts-mode/issues/16): Add support for automatic aligning forms.
+- [#82](https://github.com/clojure-emacs/clojure-ts-mode/issues/82): Introduce `clojure-ts-outline-variant`.
+- [#86](https://github.com/clojure-emacs/clojure-ts-mode/pull/86): Better handling of function literals:
+  - Syntax highlighting of built-in keywords.
+  - Consistent indentation with regular forms.
+  - Support for automatic aligning forms.
+- [#88](https://github.com/clojure-emacs/clojure-ts-mode/pull/88): Introduce `clojure-ts-unwind` and `clojure-ts-unwind-all`.
+- [#89](https://github.com/clojure-emacs/clojure-ts-mode/pull/89): Introduce `clojure-ts-thread`, `clojure-ts-thread-first-all` and
+  `clojure-ts-thread-last-all`.
+- [#90](https://github.com/clojure-emacs/clojure-ts-mode/pull/90): Introduce `clojure-ts-cycle-privacy`.
+- [#91](https://github.com/clojure-emacs/clojure-ts-mode/pull/91): Introduce `clojure-ts-cycle-keyword-string`.
+- [#92](https://github.com/clojure-emacs/clojure-ts-mode/pull/92): Add commands to convert between collections types.
+- [#93](https://github.com/clojure-emacs/clojure-ts-mode/pull/93): Introduce `clojure-ts-add-arity`.
+- [#94](https://github.com/clojure-emacs/clojure-ts-mode/pull/94): Add indentation rules and `clojure-ts-align` support for namespaced maps.
+- [#95](https://github.com/clojure-emacs/clojure-ts-mode/pull/95): Introduce `clojure-ts-cycle-conditional` and `clojure-ts-cycle-not`.
+
+## 0.3.0 (2025-04-15)
+
+- [#62](https://github.com/clojure-emacs/clojure-ts-mode/issues/62): Define `list` "thing" to improve navigation in Emacs 31.
+- [#64](https://github.com/clojure-emacs/clojure-ts-mode/pull/64): Add defcustom `clojure-ts-auto-remap` to control remapping of `clojure-mode` buffers.
+- [#66](https://github.com/clojure-emacs/clojure-ts-mode/pull/66): Improve syntax highlighting:
+  - Highlight metadata with single keyword with `clojure-ts-keyword-face`.
+  - Only highlight built-ins from `clojure.core` namespace.
+  - Highlight named lambda functions properly.
+  - Fix syntax highlighting for functions and vars with metadata on the previous
+    line.
+- [#67](https://github.com/clojure-emacs/clojure-ts-mode/pull/67): Improve semantic indentation rules to be more consistent with cljfmt.
+- [#67](https://github.com/clojure-emacs/clojure-ts-mode/pull/67): Introduce `clojure-ts-semantic-indent-rules` customization option.
+- [#61](https://github.com/clojure-emacs/clojure-ts-mode/issues/61): Fix issue with indentation of collection items with metadata.
+- [#68](https://github.com/clojure-emacs/clojure-ts-mode/pull/68): Proper syntax highlighting for expressions with metadata.
+- [#69](https://github.com/clojure-emacs/clojure-ts-mode/pull/69): Add basic support for dynamic indentation via `clojure-ts-get-indent-function`.
+- [#70](https://github.com/clojure-emacs/clojure-ts-mode/pull/70): Add support for nested indentation rules.
+- [#71](https://github.com/clojure-emacs/clojure-ts-mode/pull/71): Properly highlight function name in `letfn` form.
+- [#72](https://github.com/clojure-emacs/clojure-ts-mode/pull/72): Pass fully qualified symbol to `clojure-ts-get-indent-function`.
+- [#76](https://github.com/clojure-emacs/clojure-ts-mode/pull/76): Improve performance of semantic indentation by caching rules.
+- [#74](https://github.com/clojure-emacs/clojure-ts-mode/issues/74): Add imenu support for keywords definitions.
+- [#77](https://github.com/clojure-emacs/clojure-ts-mode/issues/77): Update grammars to the latest versions.
+- [#79](https://github.com/clojure-emacs/clojure-ts-mode/pull/79): Improve markdown highlighting in the docstrings.
+- [#60](https://github.com/clojure-emacs/clojure-ts-mode/issues/60): Fix issue with incorrect fontification, when `markdown-inline` is enabled.
+
+## 0.2.3 (2025-03-04)
+
+- [#38]: Add support for `in-ns` forms in `clojure-ts-find-ns`.
+- [#46]: Fix missing `comment-add` variable in `clojure-ts-mode-variables` mentioned in [#26]
+- Add imenu support for `deftest` definitions.
+- [#53]: Let `clojure-ts-mode` derive from `clojure-mode` for Emacs 30+.
+- [#42]: Fix imenu support for definitions with metadata.
+- [#42]: Fix font locking of definitions with metadata.
+- [#42]: Fix indentation of definitions with metadata.
+- [#49]: Fix semantic indentation of quoted functions.
+- [#58]: Add custom `fill-paragraph-function` which respects docstrings similar to
+  `clojure-mode`.
+- [#59]: Add customization option to disable markdown syntax highlighting in the
+  docstrings.
+
+## 0.2.2 (2024-02-16)
+
+- [#37]: Fix derived modes broken with [#36].
+
+## 0.2.1 (2024-02-14)
+
+- [#36]: Rename all derived mode vars to match the package prefix.
+  - `clojurescript-ts-mode` -> `clojure-ts-clojurescript-mode`
+  - `clojurec-ts-mode` -> `clojure-ts-clojurec-mode`
+  - `clojure-dart-ts-mode` -> `clojure-ts-clojuredart-mode`
+  - `clojure-jank-ts-mode` -> `clojure-ts-jank-mode`
+- [#30]: Add custom option `clojure-ts-toplevel-inside-comment-form` as an equivalent to `clojure-toplevel-inside-comment-form` in `clojure-mode`.
+- [#32]: Change behavior of `beginning-of-defun` and `end-of-defun` to consider all Clojure sexps as defuns.
+
+## 0.2.0
+
+- Pin grammar revision in treesit-language-source-alist
+  - [bd61a7fb281b7b0b1d2e20d19ab5d46cbcdc6c1e](https://github.com/clojure-emacs/clojure-ts-mode/commit/bd61a7fb281b7b0b1d2e20d19ab5d46cbcdc6c1e)
+Make font lock feature list more conforming with recommendations
+  - (See treesit-font-lock-level documentation for more information.)
+  - [2225190ee57ef667d69f2cd740e0137810bc38e7](https://github.com/clojure-emacs/clojure-ts-mode/commit/2225190ee57ef667d69f2cd740e0137810bc38e7)
+Highlight docstrings in interface, protocol, and variable definitions
+  - [9af0a6b35c708309acdfeb4c0c79061b0fd4eb44](https://github.com/clojure-emacs/clojure-ts-mode/commit/9af0a6b35c708309acdfeb4c0c79061b0fd4eb44)
+Add support for semantic indentation (now the default)
+  - [ae2e2486010554cfeb12f06a1485b4d81609d964](https://github.com/clojure-emacs/clojure-ts-mode/commit/ae2e2486010554cfeb12f06a1485b4d81609d964)
+  - [ca3914aa7aa9645ab244658f8db781cc6f95111e](https://github.com/clojure-emacs/clojure-ts-mode/commit/ca3914aa7aa9645ab244658f8db781cc6f95111e)
+  - [85871fdbc831b3129dae5762e9c247d453c35e15](https://github.com/clojure-emacs/clojure-ts-mode/commit/85871fdbc831b3129dae5762e9c247d453c35e15)
+  - [ff5d7e13dc53cc5da0e8139b04e02d90f61d9065](https://github.com/clojure-emacs/clojure-ts-mode/commit/ff5d7e13dc53cc5da0e8139b04e02d90f61d9065)
+- Highlight "\`quoted-symbols\`  in docstrings like this."
+  - This feature uses a nested markdown parser.
+     If the parser is not available this feature should be silently disabled.
+    - [9af0a6b35c708309acdfeb4c0c79061b0fd4eb44](https://github.com/clojure-emacs/clojure-ts-mode/commit/9af0a6b35c708309acdfeb4c0c79061b0fd4eb44)
+- Highlight methods for `deftype`, `defrecord`, `defprotocol`, `reify` and `definterface`
+  forms ([#20](https://github.com/clojure-emacs/clojure-ts-mode/issues/20)).
+  - [5231c348e509cff91edd1ec59d7a59645395da15](https://github.com/clojure-emacs/clojure-ts-mode/commit/5231c348e509cff91edd1ec59d7a59645395da15)
+  - Thank you rrudakov for this contribution.
+- Add derived `clojure-jank-ts-mode` for the [Jank](https://github.com/jank-lang/jank) dialect of clojure
+  - [a7b9654488693cdc9057a91410f74de42a397d1b](https://github.com/clojure-emacs/clojure-ts-mode/commit/a7b9654488693cdc9057a91410f74de42a397d1b)
+
+## 0.1.5
+
+- Disable treesit-transpose-sexps on Emacs 30 in favor of the default implementation (#17) [623c98292f9207a95169cdeae6f8595c016c6320](https://github.com/clojure-emacs/clojure-ts-mode/commit/623c98292f9207a95169cdeae6f8595c016c6320)
+- Implement clojure-ts-find-ns function (mostly as a demonstration). [d630cd63af8022d5a1fee0e7aa05450b6e0fd75e](https://github.com/clojure-emacs/clojure-ts-mode/commit/d630cd63af8022d5a1fee0e7aa05450b6e0fd75e)
+
+## 0.1.4
+
+- Fix misplaced defcustom form in hastily release 0.1.3 [6cba90c556c7e658b815cdbb9b4243bde3273203](https://github.com/clojure-emacs/clojure-ts-mode/commit/6cba90c556c7e658b815cdbb9b4243bde3273203)
+
+## 0.1.3
+
+- Add custom option for highlighting comment macro body forms as comments. [ae3790adc0fc40ad905b8c30b152122991592a4e](https://github.com/clojure-emacs/clojure-ts-mode/commit/ae3790adc0fc40ad905b8c30b152122991592a4e)
+  - Defaults to OFF, highlighting comment body forms like any other expressions.
+  - Additionally, does a better job of better detecting comment macros by reducing false positives from forms like (not.clojure.core/comment)
+
+## 0.1.2
+
+- Add a syntax table from clojure-mode. [712dc772fd38111c1e35fe60e4dbe7ac83032bd6](https://github.com/clojure-emacs/clojure-ts-mode/commit/712dc772fd38111c1e35fe60e4dbe7ac83032bd6).
+  - Better support for `thing-at-point` driven functionality.
+  - Thank you @jasonjckn for this contribution.
+- Add 3 derived major modes [4dc853df16ba09d10dc3a648865e681679c17606](https://github.com/clojure-emacs/clojure-ts-mode/commit/4dc853df16ba09d10dc3a648865e681679c17606)
+  - clojurescript-ts-mode
+  - clojurec-ts-mode
+  - clojure-dart-ts-mode
+
+## 0.1.1
+
+- Fix bug with required emacs version [19b8e4260bfd459ad5771e06afb22c9af0ebc370](https://github.com/clojure-emacs/clojure-ts-mode/commit/19b8e4260bfd459ad5771e06afb22c9af0ebc370)
+
+## 0.1.0
+
+Initial release. Includes:
+
+- Auto install of language grammar
+- Font locking (syntax highlighting)
+- Fixed style indentation
+- imenu support
+- which-function support

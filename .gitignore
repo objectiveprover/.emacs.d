@@ -26,3 +26,4 @@ site-lisp/**/dir
 flycheck_init.el
 projects.eld
 recentf.eld
+cider-history

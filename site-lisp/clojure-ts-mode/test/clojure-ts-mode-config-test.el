@@ -1,0 +1,296 @@
+;;; clojure-ts-mode-config-test.el --- Clojure TS Mode: configuration test suite  -*- lexical-binding: t; -*-
+
+;; Copyright © 2025-2026 Bozhidar Batsov
+
+;; This file is not part of GNU Emacs.
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; Tests for clojure-ts-mode configuration options (defcustom variables).
+
+;;; Code:
+
+(require 'clojure-ts-mode)
+(require 'buttercup)
+(require 'test-helper "test/test-helper")
+
+;;;; clojure-ts-toplevel-inside-comment-form
+
+(describe "clojure-ts-toplevel-inside-comment-form"
+  (before-all
+    (unless (treesit-language-available-p 'clojure)
+      (signal 'buttercup-pending "tree-sitter Clojure grammar not available")))
+
+  (it "should treat the comment form as a defun when nil (default)"
+    (with-clojure-ts-buffer "(comment\n  (defn foo [] 1)\n  (defn bar [] 2))"
+      ;; Point inside the comment form
+      (goto-char 15)
+      (let ((node (treesit-defun-at-point)))
+        ;; The defun-at-point should be the comment form
+        (expect node :not :to-be nil)
+        (expect (string-prefix-p "(comment" (treesit-node-text node))
+                :to-be-truthy))))
+
+  (it "should navigate to inner defns when non-nil"
+    (with-clojure-ts-buffer "(comment\n  (defn foo [] 1)\n  (defn bar [] 2))"
+      (setq-local clojure-ts-toplevel-inside-comment-form t)
+      ;; Point inside the comment form
+      (goto-char 15)
+      (let ((node (treesit-defun-at-point)))
+        ;; The defun-at-point should be the inner defn, not the comment
+        (expect node :not :to-be nil)
+        (expect (string-prefix-p "(defn foo" (treesit-node-text node))
+                :to-be-truthy)))))
+
+;;;; clojure-ts-docstring-fill-column
+
+(describe "clojure-ts-docstring-fill-column"
+  (it "should use the custom fill column when filling docstrings"
+    (with-clojure-ts-buffer "(defn foo
+  \"This is a short docstring.\"
+  [])"
+      (let ((clojure-ts-docstring-fill-column 20))
+        (goto-char (point-min))
+        (search-forward "This")
+        (fill-paragraph)
+        (expect (buffer-substring-no-properties (point-min) (point-max))
+                :to-equal "(defn foo
+  \"This is a short
+  docstring.\"
+  [])"))))
+
+  (it "should not affect comment filling"
+    (with-clojure-ts-buffer ";; This is a comment that should not be affected by the docstring fill column setting."
+      (let ((clojure-ts-docstring-fill-column 10)
+            (fill-column 70))
+        (goto-char (point-min))
+        (fill-paragraph)
+        ;; Comment wraps at fill-column (70), not docstring-fill-column (10)
+        (expect (buffer-substring-no-properties (point-min) (point-max))
+                :to-equal ";; This is a comment that should not be affected by the docstring fill
+;; column setting.")))))
+
+;;;; clojure-ts-docstring-fill-prefix-width
+
+(describe "clojure-ts-docstring-fill-prefix-width"
+  (it "should use custom fill prefix width when filling docstrings"
+    (with-clojure-ts-buffer "(defn foo
+  \"This is a short docstring.\"
+  [])"
+      (let ((clojure-ts-docstring-fill-column 20)
+            (clojure-ts-docstring-fill-prefix-width 4))
+        (goto-char (point-min))
+        (search-forward "This")
+        (fill-paragraph)
+        ;; Continuation lines should be indented with 4 spaces
+        (expect (buffer-substring-no-properties (point-min) (point-max))
+                :to-equal "(defn foo
+  \"This is a short
+    docstring.\"
+  [])"))))
+
+  (it "should default to 2 spaces for fill prefix"
+    (with-clojure-ts-buffer "(defn foo
+  \"This is a short docstring.\"
+  [])"
+      (let ((clojure-ts-docstring-fill-column 20))
+        (goto-char (point-min))
+        (search-forward "This")
+        (fill-paragraph)
+        ;; Default: continuation lines indented with 2 spaces
+        (expect (buffer-substring-no-properties (point-min) (point-max))
+                :to-equal "(defn foo
+  \"This is a short
+  docstring.\"
+  [])")))))
+
+;;;; clojure-ts-thread-all-but-last
+
+(describe "clojure-ts-thread-all-but-last"
+  (it "should thread all expressions by default"
+    (with-clojure-ts-buffer "(map inc (filter even? coll))"
+      (goto-char (point-min))
+      (clojure-ts-thread-last-all nil)
+      (expect (buffer-string)
+              :to-equal "(->> coll\n     (filter even?)\n     (map inc))")))
+
+  (it "should leave last expression unthreaded when set to t"
+    (with-clojure-ts-buffer "(map inc (filter even? coll))"
+      (let ((clojure-ts-thread-all-but-last t))
+        (goto-char (point-min))
+        (clojure-ts-thread-last-all nil))
+      (expect (buffer-string)
+              :to-equal "(->> (filter even? coll)\n     (map inc))")))
+
+  (it "should apply to thread-first-all as well"
+    (with-clojure-ts-buffer "(assoc (merge {} {:a 1}) :b 2)"
+      (let ((clojure-ts-thread-all-but-last t))
+        (goto-char (point-min))
+        (clojure-ts-thread-first-all nil))
+      (expect (buffer-string)
+              :to-equal "(-> (merge {} {:a 1})\n    (assoc :b 2))"))))
+
+;;;; Options that the mode setup depends on
+
+(defconst clojure-ts-test--options-source
+  "(defelem file-upload [name] name)
+(comment (foo))
+(foo
+bar)
+(my-block x
+y)
+{:a 1
+:bbb 2}"
+  "Clojure code that shows the effect of the options set up with the mode.")
+
+(defun clojure-ts-test--face-at (text)
+  "Return the face at the start of the first occurrence of TEXT."
+  (save-excursion
+    (goto-char (point-min))
+    (search-forward text)
+    (get-text-property (match-beginning 0) 'face)))
+
+(describe "options set in .dir-locals.el"
+  (it "should apply to the buffers in the directory, and only to those"
+    (with-temp-dir temp-dir
+      (let ((enable-local-variables :all)
+            (project-dir (expand-file-name "project" temp-dir))
+            (other-dir (expand-file-name "other" temp-dir)))
+        (make-directory project-dir)
+        (make-directory other-dir)
+        (write-region "((clojure-ts-mode . ((clojure-ts-indent-style . fixed)
+                     (clojure-ts-align-forms-automatically . t)
+                     (clojure-ts-extra-def-forms . (\"defelem\"))
+                     (clojure-ts-comment-macro-font-lock-body . t)
+                     (clojure-ts-outline-variant . imenu)
+                     (clojure-ts-completion-enabled . nil))))"
+                      nil (expand-file-name ".dir-locals.el" project-dir))
+        (dolist (dir (list project-dir other-dir))
+          (write-region clojure-ts-test--options-source nil
+                        (expand-file-name "a.clj" dir)))
+        (let ((project-buffer (find-file-noselect (expand-file-name "a.clj" project-dir)))
+              (other-buffer (find-file-noselect (expand-file-name "a.clj" other-dir))))
+          (unwind-protect
+              (progn
+                (with-current-buffer project-buffer
+                  (font-lock-ensure)
+                  (expect (clojure-ts-test--face-at "defelem")
+                          :to-equal 'font-lock-keyword-face)
+                  (expect (clojure-ts-test--face-at "(foo)")
+                          :to-equal 'font-lock-comment-face)
+                  (indent-region (point-min) (point-max))
+                  ;; Fixed indentation and aligned map values.
+                  (expect (buffer-string) :to-match "(foo\n  bar)")
+                  (expect (buffer-string) :to-match "(my-block x\n  y)")
+                  (expect (buffer-string) :to-match "{:a   1\n :bbb 2}")
+                  (expect treesit-outline-predicate
+                          :to-be #'treesit-outline-predicate--from-imenu)
+                  (expect completion-at-point-functions
+                          :not :to-contain #'clojure-ts-completion-at-point-function))
+                (with-current-buffer other-buffer
+                  (font-lock-ensure)
+                  (expect (clojure-ts-test--face-at "defelem")
+                          :not :to-equal 'font-lock-keyword-face)
+                  (expect (clojure-ts-test--face-at "(foo)")
+                          :not :to-equal 'font-lock-comment-face)
+                  (indent-region (point-min) (point-max))
+                  (expect (buffer-string) :to-match "(foo\n bar)")
+                  (expect (buffer-string) :to-match "(my-block x\n          y)")
+                  (expect (buffer-string) :to-match "{:a 1\n :bbb 2}")
+                  (expect treesit-outline-predicate
+                          :to-be #'clojure-ts--outline-predicate)
+                  (expect completion-at-point-functions
+                          :to-contain #'clojure-ts-completion-at-point-function)))
+            (kill-buffer project-buffer)
+            (kill-buffer other-buffer)))))))
+
+(describe "options read when the mode starts"
+  (it "should not be safe as directory-local variables, as they can't apply there"
+    (dolist (option '(clojure-ts-ensure-grammars
+                      clojure-ts-use-markdown-inline
+                      clojure-ts-use-regex-parser
+                      clojure-ts-clojurescript-use-js-parser
+                      clojure-ts-jank-use-cpp-parser
+                      clojure-ts-auto-remap))
+      (expect (safe-local-variable-p option nil) :not :to-be-truthy))))
+
+(describe "clojure-ts-outline-variant"
+  (it "should only be safe as a directory-local variable with a valid value"
+    (expect (safe-local-variable-p 'clojure-ts-outline-variant 'imenu) :to-be-truthy)
+    (expect (safe-local-variable-p 'clojure-ts-outline-variant 'imenus) :not :to-be-truthy)))
+
+(describe "options set with setopt"
+  (it "should apply to the open buffers, even when set from another buffer"
+    (with-clojure-ts-buffer clojure-ts-test--options-source
+      (let ((clojure-buffer (current-buffer)))
+        (font-lock-ensure)
+        (unwind-protect
+            (progn
+              (with-temp-buffer
+                (setopt clojure-ts-extra-def-forms '("defelem")
+                        clojure-ts-comment-macro-font-lock-body t
+                        clojure-ts-indent-style 'fixed))
+              (with-current-buffer clojure-buffer
+                (font-lock-ensure)
+                (expect (clojure-ts-test--face-at "defelem")
+                        :to-equal 'font-lock-keyword-face)
+                (expect (clojure-ts-test--face-at "(foo)")
+                        :to-equal 'font-lock-comment-face)
+                (indent-region (point-min) (point-max))
+                (expect (buffer-string) :to-match "(foo\n  bar)")))
+          (setopt clojure-ts-extra-def-forms nil
+                  clojure-ts-comment-macro-font-lock-body nil
+                  clojure-ts-indent-style 'semantic))))))
+
+(describe "options set with setopt-local"
+  (it "should apply to the current buffer, and only to that one"
+    (assume (fboundp 'setopt-local) "setopt-local needs Emacs 31")
+    (with-clojure-ts-buffer clojure-ts-test--options-source
+      (with-clojure-ts-buffer clojure-ts-test--options-source
+        (font-lock-ensure)
+        (spy-on 'font-lock-flush :and-call-through)
+        (setopt-local clojure-ts-extra-def-forms '("defelem")
+                      clojure-ts-comment-macro-font-lock-body t
+                      clojure-ts-indent-style 'fixed)
+        ;; `font-lock-ensure' refontifies everything in batch mode, so it
+        ;; can't tell whether the old faces would have stayed on screen.
+        (expect 'font-lock-flush :to-have-been-called)
+        (font-lock-ensure)
+        (expect (clojure-ts-test--face-at "defelem")
+                :to-equal 'font-lock-keyword-face)
+        (expect (clojure-ts-test--face-at "(foo)")
+                :to-equal 'font-lock-comment-face)
+        (indent-region (point-min) (point-max))
+        (expect (buffer-string) :to-match "(foo\n  bar)"))
+      (font-lock-ensure)
+      (expect (clojure-ts-test--face-at "defelem")
+              :not :to-equal 'font-lock-keyword-face)
+      (expect (clojure-ts-test--face-at "(foo)")
+              :not :to-equal 'font-lock-comment-face)
+      (indent-region (point-min) (point-max))
+      (expect (buffer-string) :to-match "(foo\n bar)"))))
+
+(describe "clojure-ts-semantic-indent-rules"
+  (it "should apply however it's set"
+    (with-clojure-ts-buffer "(my-block x\ny)"
+      (setq-local clojure-ts-semantic-indent-rules '(("my-block" . ((:block 1)))))
+      (indent-region (point-min) (point-max))
+      (expect (buffer-string) :to-equal "(my-block x\n  y)")
+      (let ((clojure-ts-semantic-indent-rules nil))
+        (indent-region (point-min) (point-max))
+        (expect (buffer-string) :to-equal "(my-block x\n          y)")))))
+
+;;; clojure-ts-mode-config-test.el ends here
