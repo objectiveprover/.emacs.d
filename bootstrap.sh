@@ -4,11 +4,17 @@
 # In Emacs, M-x Minimalist/install-tools asks which tools and directories
 # to use and runs this script.  Directly:
 #
-#   ./bootstrap.sh [OPTIONS] [TOOL...]
+#   ./bootstrap.sh [OPTIONS] [TOOL...] [build]
 #
 # With no TOOL, installs the ones every setup uses: aspell, compiler and
 # clipboard.  Language tools are only installed when named.
 # Anything already installed is skipped.
+#
+#   ./bootstrap.sh build
+#
+# rebuilds the packages in site-lisp/ (autoloads, byte-compilation and
+# manuals), which is needed after adding, updating or editing one.  On its
+# own it installs nothing; with TOOLs, it rebuilds after installing them.
 #
 # Tools (keep in sync with `Minimalist/tools' in init.el):
 #   aspell     aspell and its English dictionary, for spell checking
@@ -24,14 +30,18 @@
 #   --prefix DIR    where the Clojure CLI goes on Linux, in DIR/bin (~/.local)
 #   --dry-run       only print what would be done
 #
-# System packages come from Homebrew on macOS and apt (with sudo) on Linux;
-# their locations are up to the package manager.
+# System packages come from Homebrew on macOS, and on Linux from apt
+# (Debian, Ubuntu) or pacman (Arch), with sudo; their locations are up to
+# the package manager.  On Arch, Chez Scheme and Gforth are only in the
+# AUR, and are installed with paru or yay if one of them is there.
 
 set -euo pipefail
 
+here="$(cd "$(dirname "$0")" && pwd)"
 bin_dir="$HOME/.local/bin"
 prefix="$HOME/.local"
 dry_run=
+build=
 tools=()
 
 usage() { sed -n '2,/^$/{s/^# \{0,1\}//;p}' "$0"; }
@@ -42,18 +52,31 @@ while (($#)); do
     --prefix) prefix="$2"; shift ;;
     --dry-run) dry_run=1 ;;
     -h | --help) usage; exit 0 ;;
+    build) build=1 ;;
     aspell | compiler | clipboard | clojure | elixir | scheme | forth)
       tools+=("$1") ;;
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 1 ;;
   esac
   shift
 done
-((${#tools[@]})) || tools=(aspell compiler clipboard)
 
-want() { [[ " ${tools[*]} " == *" $1 "* ]]; }
+want() { [[ " ${tools[*]-} " == *" $1 "* ]]; }
 have() { command -v "$1" >/dev/null 2>&1; }
 run() { echo "+ $*"; [[ -n $dry_run ]] || "$@"; }
 step() { printf '\n== %s\n' "$*"; }
+
+# Rebuild the packages in site-lisp/, as site-lisp/site-lisp.el describes
+build_packages() {
+  have emacs || { echo "emacs is needed to build the packages" >&2; exit 1; }
+  step "Building the packages in site-lisp/"
+  run emacs --batch -l "$here/site-lisp/site-lisp.el" -f Minimalist/site-lisp-build
+}
+
+if [[ -n $build ]] && ! ((${#tools[@]})); then
+  build_packages
+  exit
+fi
+((${#tools[@]})) || tools=(aspell compiler clipboard)
 
 have curl || { echo "curl is needed to run this script" >&2; exit 1; }
 
@@ -98,30 +121,66 @@ if [[ $os == macos ]]; then
     run brew install "${formulae[@]}"
   fi
 else
+  if have apt-get; then pm=apt
+  elif have pacman; then pm=pacman
+  else pm=
+  fi
   packages=()
+  aur_packages=()
+  # Add a package, by its Debian name or its Arch name
+  pkg() { if [[ $pm == pacman ]]; then packages+=("$2"); else packages+=("$1"); fi; }
+  # Add a package that Arch only has in the AUR
+  aur() { if [[ $pm == pacman ]]; then aur_packages+=("$2"); else packages+=("$1"); fi; }
+
   if want aspell && { ! have aspell || ! aspell dump dicts 2>/dev/null | grep -qx en_US; }; then
     packages+=(aspell aspell-en)
   fi
   if want compiler; then
     have git || packages+=(git)
-    have cc || packages+=(build-essential)
+    have cc || pkg build-essential base-devel
   fi
   if want clipboard; then
     have xclip || packages+=(xclip)
     have wl-paste || packages+=(wl-clipboard)
   fi
-  want clojure && ! have java && packages+=(default-jdk-headless)
+  # Arch has no headless JDK
+  want clojure && ! have java && pkg default-jdk-headless jdk-openjdk
   want clojure && ! have unzip && packages+=(unzip)
-  want scheme && ! have chezscheme && ! have chez && packages+=(chezscheme)
-  want forth && ! have gforth && packages+=(gforth)
+  # Both are called chez on Arch, as on macOS
+  want scheme && ! have chezscheme && ! have chez && aur chezscheme chez-scheme
+  want forth && ! have gforth && aur gforth gforth
+
   if ((${#packages[@]})); then
-    have apt-get || {
-      echo "No apt-get; install these with your package manager: ${packages[*]}" >&2
-      exit 1
-    }
-    step "apt: ${packages[*]}"
-    run sudo apt-get update
-    run sudo apt-get install -y "${packages[@]}"
+    case "$pm" in
+      apt)
+        step "apt: ${packages[*]}"
+        run sudo apt-get update
+        run sudo apt-get install -y "${packages[@]}"
+        ;;
+      pacman)
+        step "pacman: ${packages[*]}"
+        run sudo pacman -S --needed --noconfirm "${packages[@]}"
+        ;;
+      *)
+        echo "No apt-get or pacman; install these with your package manager: ${packages[*]}" >&2
+        exit 1
+        ;;
+    esac
+  fi
+
+  if ((${#aur_packages[@]})); then
+    if have paru; then aur_helper=paru
+    elif have yay; then aur_helper=yay
+    else aur_helper=
+    fi
+    if [[ -n $aur_helper ]]; then
+      # The helpers ask for sudo themselves
+      step "AUR ($aur_helper): ${aur_packages[*]}"
+      run "$aur_helper" -S --needed --noconfirm "${aur_packages[@]}"
+    else
+      printf '\nNo paru or yay; install these from the AUR: %s\n' \
+        "${aur_packages[*]}" >&2
+    fi
   fi
 
   if want clojure && ! have clojure; then
@@ -172,5 +231,7 @@ for dir in ${path_dirs[@]+"${path_dirs[@]}"}; do
     printf '\nAdd %s to PATH in your shell profile.\n' "$dir"
   fi
 done
+
+[[ -z $build ]] || build_packages
 
 printf '\nDone.\n'

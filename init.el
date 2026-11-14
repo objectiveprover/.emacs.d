@@ -122,7 +122,7 @@ The essential ones that are missing are filled in to start with."
 Interactively, asks for the tools, then for each directory the chosen
 ones install into: BIN-DIR for clojure-lsp and expert and PREFIX for
 the Clojure CLI.  System packages go wherever
-Homebrew or apt puts them.  With a prefix argument, DRY-RUN: only show
+Homebrew, apt or pacman puts them.  With a prefix argument, DRY-RUN: only show
 what would be done.
 
 bootstrap.sh runs in a terminal buffer, where sudo can ask for a password."
@@ -928,8 +928,8 @@ of recomputed on every mode-line redisplay."
             (setq mode-name
                   '("Elisp" (lexical-binding " \uf0ec Lexical" " \uf0ec Dynamic")))))
 
-;; Scheme (Chez Scheme).  Homebrew calls the program chez, Debian and
-;; Ubuntu chezscheme.
+;; Scheme (Chez Scheme).  Homebrew and Arch's AUR call the program chez,
+;; Debian and Ubuntu chezscheme.
 (use-package geiser-chez
   :custom
   (geiser-chez-binary (if (executable-find "chezscheme") "chezscheme" "chez"))

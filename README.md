@@ -24,11 +24,11 @@ third-party package is copied into this repository and loaded from there.
 - **Built-in completion.** Vertical `icomplete` with `marginalia` annotations,
   forgiving matching (`partial-completion` and `flex`), inline completion
   preview and `which-key`.
-- **Languages:** Emacs Lisp, Clojure (clojure-ts-mode, CIDER, clojure-lsp),
-  Elixir and Phoenix (elixir-ts-mode, heex-ts-mode, Expert), Scheme (Geiser
-  with Chez Scheme), Forth (Gforth), plus Markdown, JSON and Org. Tree-sitter
-  grammars install themselves the first time they're needed, and buffers
-  managed by a language server are formatted on save.
+- **Languages:**
+  - Clojure (clojure-ts-mode, CIDER, clojure-lsp)
+  - Elixir and Phoenix (elixir-ts-mode, heex-ts-mode, Expert)
+  - Scheme (Geiser with Chez Scheme)
+  - Forth (Gforth)
 - **Lisp editing** with paredit and aggressive-indent, Git with Magit and
   git-gutter, a terminal with eat, spell checking with Flyspell and Aspell.
 
@@ -37,7 +37,10 @@ third-party package is copied into this repository and loaded from there.
 - **Emacs 31** or newer.
 - A terminal using a **Nerd Font**, for the icons in the mode line and the Git
   signs in the margin.
-- For the tool installer: **macOS** with Homebrew, or **Linux** with apt.
+- For the tool installer: **macOS** with Homebrew, or **Linux** with apt
+  (Debian, Ubuntu) or pacman (Arch). On Arch, Chez Scheme and Gforth are only
+  in the AUR, so they need [paru](https://github.com/Morganamilo/paru) or
+  [yay](https://github.com/Jguer/yay).
 
 ## Installation
 
@@ -53,8 +56,9 @@ every setup needs are missing, Emacs warns about them at startup.
 ## External tools
 
 `bootstrap.sh` installs the programs this config uses, skipping anything
-already installed. System packages come from Homebrew on macOS and apt on
-Linux; language servers come from their GitHub releases.
+already installed. System packages come from Homebrew on macOS, and from apt
+or pacman on Linux (the AUR on Arch, for Chez Scheme and Gforth); language
+servers come from their GitHub releases.
 
 | Tool        | Installs                                       | Default |
 |-------------|------------------------------------------------|---------|
@@ -77,6 +81,7 @@ From a shell:
 ./bootstrap.sh                    # aspell, compiler and clipboard
 ./bootstrap.sh clojure elixir     # language tools are installed only when named
 ./bootstrap.sh --dry-run clojure  # only print what would be done
+./bootstrap.sh build              # rebuild site-lisp/ (see Managing packages)
 ```
 
 `--bin-dir DIR` sets where clojure-lsp and Expert go (default `~/.local/bin`),
@@ -142,16 +147,16 @@ repository: free to edit, and only changed when I change them.
 - **Add** a package (or a new dependency of one): copy its files into
   `site-lisp/NAME`.
 - **Remove** one: delete its directory.
-- **Rebuild** after adding, updating or editing packages, from `~/.emacs.d`:
+- **Rebuild** after adding, updating or editing packages:
 
   ```sh
-  emacs --batch -l site-lisp/site-lisp.el -f Minimalist/site-lisp-build
+  ~/.emacs.d/bootstrap.sh build
   ```
 
   This generates autoloads, byte-compiles every package and builds the Info
   manuals (`C-h i`) of the packages that have one. Building the manuals needs
-  `makeinfo` and `install-info`; on macOS, install Homebrew's `texinfo`, since
-  the system versions are too old.
+  `makeinfo` and `install-info`, from the `texinfo` package; on macOS, install
+  Homebrew's, since the system versions are too old.
 
 In `init.el`, `use-package` is used for packages in `site-lisp/` and
 `use-feature` for libraries built into Emacs, so it's always clear where a

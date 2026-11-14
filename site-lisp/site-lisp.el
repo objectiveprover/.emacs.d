@@ -19,12 +19,16 @@
 ;; site-lisp/NAME.  Remove one: delete its directory.  After adding,
 ;; updating or editing packages, rebuild from ~/.emacs.d:
 ;;
+;;   ./bootstrap.sh build
+;;
+;; which runs
+;;
 ;;   emacs --batch -l site-lisp/site-lisp.el -f Minimalist/site-lisp-build
 ;;
 ;; That generates autoloads, byte-compiles every package and builds the
 ;; Info manuals (C-h i) of those that have one.  Building the manuals needs
-;; makeinfo and install-info from Homebrew's texinfo; macOS's own are too
-;; old.  Without them, the manuals are skipped.
+;; makeinfo and install-info, from the texinfo package (on macOS, Homebrew's;
+;; the system's own are too old).  Without them, the manuals are skipped.
 ;;
 ;; Build output (*.elc, *-autoloads.el, *.info, dir) sits next to the
 ;; sources and is ignored by git (see .gitignore).
@@ -112,8 +116,7 @@ see the *site-lisp build* buffer"))
     (when-let* ((missing (Minimalist/site-lisp-unbuilt packages)))
       (display-warning
        'site-lisp
-       (format "Not built: %s.  Run from ~/.emacs.d:
-emacs --batch -l site-lisp/site-lisp.el -f Minimalist/site-lisp-build"
+       (format "Not built: %s.  Run from ~/.emacs.d: ./bootstrap.sh build"
                (mapconcat #'car missing ", "))))))
 
 ;; Not every -test.el or -debug.el: cider-test.el and cider-debug.el are
