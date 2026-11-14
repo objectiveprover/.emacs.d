@@ -25,3 +25,4 @@ site-lisp/**/dir
 .yas-compiled-snippets.*
 flycheck_init.el
 projects.eld
+recentf.eld
