@@ -248,6 +248,9 @@ bootstrap.sh runs in a terminal buffer, where sudo can ask for a password."
         auto-save-file-name-transforms
         `((".*" ,(expand-file-name "autosaves/" user-emacs-directory) t)))
 
+;; Emacs won't create the auto-save directory on its own
+(make-directory (expand-file-name "autosaves/" user-emacs-directory) t)
+
 ;; Remove trailing whitespace on save, but only from lines I edited, so files
 ;; in shared repositories don't get unrelated whitespace changes
 (use-package ws-butler
