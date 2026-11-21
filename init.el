@@ -427,6 +427,25 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 ;; --------------------------------------------------------------------------------
 ;; Completion
 
+(defun Minimalist/truncate-lines ()
+  "Truncate long lines in the current buffer instead of wrapping them."
+  (setq-local truncate-lines t))
+
+(defvar icomplete-overlay)
+(defun Minimalist/icomplete-cursor-on-selection (&rest _)
+  "Show the cursor on the selected candidate rather than on the input line.
+icomplete draws the candidates as an overlay string and pins the
+cursor to its start, so moving through the list didn't move it.  The
+cursor goes back to the input when point leaves the end of the input,
+e.g. after \\[backward-char]."
+  (when-let* ((text (overlay-get icomplete-overlay 'after-string))
+              (selected (text-property-any 0 (length text)
+                                           'icomplete-selected t text)))
+    (setq text (copy-sequence text))
+    (remove-list-of-text-properties 0 (length text) '(cursor) text)
+    (put-text-property selected (1+ selected) 'cursor t text)
+    (overlay-put icomplete-overlay 'after-string text)))
+
 ;; Vertical minibuffer completion (M-x, find-file...)
 ;; RET picks the highlighted candidate and M-RET submits what was typed,
 ;; e.g. a new file name.  TAB inserts the candidate, e.g. to enter a directory.
@@ -434,7 +453,6 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
 ;; instead of rotating the selected candidate to the top.
 (use-feature icomplete
   :custom
-  (icomplete-scroll t)
   (icomplete-show-matches-on-no-input t)
   (icomplete-compute-delay 0)
   (icomplete-prospects-height 12)
@@ -442,8 +460,16 @@ Wraps the sequence for tmux/screen passthrough when running inside either."
   :bind (:map icomplete-minibuffer-map
               ("RET" . icomplete-force-complete-and-exit)
               ("M-RET" . exit-minibuffer))
+  :hook
+  ;; Cut candidates at the window edge instead of wrapping them onto the
+  ;; next line, which pushes the rest of the list out of place
+  (icomplete-minibuffer-setup . Minimalist/truncate-lines)
   :init
-  (icomplete-vertical-mode))
+  ;; A plain variable rather than a user option, so :custom can't set it
+  (setq icomplete-scroll t)
+  (icomplete-vertical-mode)
+  :config
+  (advice-add 'icomplete-exhibit :after #'Minimalist/icomplete-cursor-on-selection))
 
 ;; Descriptions next to the candidates: docstrings for commands, functions
 ;; and variables, sizes and dates for files, modes for buffers...
