@@ -11,7 +11,7 @@ third-party package is copied into this repository and loaded from there.
 - **Terminal only.** The menu bar is turned off before the first frame is
   drawn. Copying goes to the system clipboard through OSC 52, so it also works
   over SSH and inside tmux.
-- **No package manager.** `package.el` is off. 24 packages are vendored in
+- **No package manager.** `package.el` is off. 27 packages are vendored in
   `site-lisp/` and built automatically the first time Emacs starts.
 - **A quiet theme.** Code is mostly black on white. Structure shows through
   bold and italics rather than color, comments are magenta and parentheses are
@@ -27,6 +27,7 @@ third-party package is copied into this repository and loaded from there.
 - **Languages:**
   - Clojure (clojure-ts-mode, CIDER, clojure-lsp)
   - Elixir and Phoenix (elixir-ts-mode, heex-ts-mode, Expert)
+  - QML (qml-ts-mode, qmlls)
   - Scheme (Geiser with Chez Scheme)
   - Forth (Gforth)
 - **Lisp editing** with paredit and aggressive-indent, Git with Magit and
@@ -67,6 +68,7 @@ servers come from their GitHub releases.
 | `clipboard` | xclip and wl-clipboard, for pasting (Linux)    | yes     |
 | `clojure`   | Clojure CLI, Java and clojure-lsp              | no      |
 | `elixir`    | Expert, the Elixir language server             | no      |
+| `qml`       | qmlls, the QML language server, from Qt        | no      |
 | `scheme`    | Chez Scheme                                    | no      |
 | `forth`     | Gforth                                         | no      |
 

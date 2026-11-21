@@ -52,6 +52,9 @@
              "clojure" "java" "clojure-lsp")
     (elixir "expert, the Elixir language server" nil
             "expert")
+    ;; Arch calls it qmlls6, and Debian keeps it off PATH
+    (qml "qmlls, the QML language server, from Qt" nil
+         ("qmlls" "qmlls6" "/usr/lib/qt6/bin/qmlls"))
     (scheme "Chez Scheme" nil
             ("chez" "chezscheme"))
     (forth "Gforth" nil
@@ -967,7 +970,12 @@ of recomputed on every mode-line redisplay."
   ;; Expert, the official Elixir language server, found on PATH.
   ;; clojure-lsp is already in the defaults.
   (add-to-list 'eglot-server-programs
-               '((elixir-ts-mode heex-ts-mode) . ("expert" "--stdio"))))
+               '((elixir-ts-mode heex-ts-mode) . ("expert" "--stdio")))
+  ;; qmlls, Qt's QML language server, under whichever name the system
+  ;; gave it (see `Minimalist/tools')
+  (add-to-list 'eglot-server-programs
+               `(qml-ts-mode . ,(eglot-alternatives
+                                 '("qmlls" "qmlls6" "/usr/lib/qt6/bin/qmlls")))))
 
 ;; Format with the language server before saving, but only when a server
 ;; manages the buffer, so saving never fails without one
@@ -1049,6 +1057,19 @@ of recomputed on every mode-line redisplay."
 (use-feature heex-ts-mode
   :mode ("\\.heex\\'")
   :hook (heex-ts-mode . Minimalist/eglot-setup))
+
+;; --------------------------------------------------------------------------------
+;; QML
+
+;; QML files in a tree-sitter mode, indented 4 spaces like Qt's own code.
+;; The grammar (tree-sitter-qmljs) builds the first time a .qml file is
+;; opened.  The language server is qmlls, which also formats on save
+;; (qmlformat).  It finds Qt's modules by itself; for a project's own
+;; modules it reads a .qmlls.ini in the project (Qt's CMake can generate
+;; one with QT_QML_GENERATE_QMLLS_INI).
+(use-package qml-ts-mode
+  :mode ("\\.qml\\'")
+  :hook (qml-ts-mode . Minimalist/eglot-setup))
 
 ;; --------------------------------------------------------------------------------
 

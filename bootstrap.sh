@@ -22,6 +22,7 @@
 #   clipboard  xclip and wl-clipboard, to paste from the system clipboard (Linux)
 #   clojure    Clojure CLI, Java and clojure-lsp
 #   elixir     expert, the Elixir language server
+#   qml        qmlls, the QML language server, from Qt
 #   scheme     Chez Scheme
 #   forth      Gforth
 #
@@ -53,7 +54,7 @@ while (($#)); do
     --dry-run) dry_run=1 ;;
     -h | --help) usage; exit 0 ;;
     build) build=1 ;;
-    aspell | compiler | clipboard | clojure | elixir | scheme | forth)
+    aspell | compiler | clipboard | clojure | elixir | qml | scheme | forth)
       tools+=("$1") ;;
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 1 ;;
   esac
@@ -62,6 +63,8 @@ done
 
 want() { [[ " ${tools[*]-} " == *" $1 "* ]]; }
 have() { command -v "$1" >/dev/null 2>&1; }
+# qmlls is qmlls6 on Arch, and off PATH on Debian
+have_qmlls() { have qmlls || have qmlls6 || [[ -x /usr/lib/qt6/bin/qmlls ]]; }
 run() { echo "+ $*"; [[ -n $dry_run ]] || "$@"; }
 step() { printf '\n== %s\n' "$*"; }
 
@@ -114,6 +117,7 @@ if [[ $os == macos ]]; then
   want aspell && ! have aspell && formulae+=(aspell)
   want scheme && ! have chez && formulae+=(chezscheme)
   want forth && ! have gforth && formulae+=(gforth)
+  want qml && ! have_qmlls && formulae+=(qtdeclarative)
   # Also installs Java (openjdk) as a dependency
   want clojure && ! have clojure && formulae+=(clojure/tools/clojure)
   if ((${#formulae[@]})); then
@@ -149,6 +153,7 @@ else
   # Both are called chez on Arch, as on macOS
   want scheme && ! have chezscheme && ! have chez && aur chezscheme chez-scheme
   want forth && ! have gforth && aur gforth gforth
+  want qml && ! have_qmlls && pkg qt6-declarative-dev-tools qt6-declarative
 
   if ((${#packages[@]})); then
     case "$pm" in
